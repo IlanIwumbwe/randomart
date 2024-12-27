@@ -7,7 +7,7 @@ TARGET = randomart
 	gcc $(FLAGS) -c $< -o $@
 
 $(TARGET) : $(OBJS)
-	gcc $(FLAGS) -o $@ $<
+	gcc $(FLAGS) -o $@ $< -lm
 
 all: $(TARGET)
 
