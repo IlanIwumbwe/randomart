@@ -1,32 +1,21 @@
 #ifndef RENDER_H
 #define RENDER_H
 
-#include "defs.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "../headers/stb_image_write.h"
+#include <math.h>
+#include "ast.h"
 
-/// @brief Return rgb value at that pixel [-1, 1]
-/// @param x [-1, 1] 
-/// @param y [-1, 1]
-/// @return 
-Colour greyscale(float x, float y){
-    Colour c = {x, x, x};
+#define IMAGE_SIZE 256
 
-    return c;
-}
+typedef struct {
+    char r;
+    char g;
+    char b;
+    char a;
+} Pixel;
 
-Colour comp(float x, float y){
-
-    if(x*y >= 0.0){
-        return (Colour) {x, y, 1.0};
-    } else {
-        return (Colour) {fmod(x, y), fmod(x, y), fmod(x, y)};
-    }
-}
-
-Colour other(float x, float y){
-    return (Colour){x, x, y};
-}
-
-void render_image(Colour (*f)(float x, float y)){
+int render_image(Ast* ast){
     float f_x, f_y;
     Pixel canvas[IMAGE_SIZE][IMAGE_SIZE];
 
@@ -36,18 +25,28 @@ void render_image(Colour (*f)(float x, float y)){
             f_x = ((float)int_x / (float)IMAGE_SIZE) * 2.0 - 1.0;
             f_y = ((float)int_y / (float)IMAGE_SIZE) * 2.0 - 1.0;
 
-            Colour c = f(f_x, f_y);
+            Node* res = eval(ast, f_x, f_y); // sample function built from AST
 
-            canvas[int_y][int_x].r = ((c.r+1)/2.0) * 255;
-            canvas[int_y][int_x].g = ((c.g+1)/2.0) * 255;
-            canvas[int_y][int_x].b = ((c.b+1)/2.0) * 255;
+            if(res == NULL){return -1;}
+
+            if(res->nk != NK_TRIPLE){
+                printf("[FILE %s] Final output from AST must be a triple! AST head added at line %d is not\n", res->file, res->line);
+                return -1;
+            }
+
+            canvas[int_y][int_x].r = ((res->as.triple.first->as.number+1)/2.0) * 255;
+            canvas[int_y][int_x].g = ((res->as.triple.second->as.number+1)/2.0) * 255;
+            canvas[int_y][int_x].b = ((res->as.triple.third->as.number+1)/2.0) * 255;
             canvas[int_y][int_x].a = 255;
         }
     }
 
     if(!stbi_write_png("randomart.png", IMAGE_SIZE, IMAGE_SIZE, 4, *canvas, sizeof(Pixel) * IMAGE_SIZE)){
         printf("[ERROR] could not write image\n");
-    }  
+        return -1;
+    }
+
+    return 0;  
 }
 
 
