@@ -69,14 +69,19 @@ void init_ast(Ast* ast, size_t capacity){
 
         ast->capacity = capacity;
         ast->used = 0;
-
-        printf("Allocated %ld elements for dynamic array\n", ast->capacity);
     }
 }
 
 void free_ast(Ast* ast){
     free(ast);
     printf("Freed ast memory\n");
+}
+
+/// @brief Reset `array_head` and `used` pointers to point to the root of the AST that was generated. This is required to prepare new evaluation       
+/// @param ast 
+void find_ast_root(Ast* ast){
+    ast->array_head = ast->array + ast->size - 1; // reset head pointer to top of AST to setup re-evaluation
+    ast->used = ast->size; // reset used counter to overwrite created nodes during previous evaluation
 }
 
 void reallocate_node_pointers(Node n, Node* old_node_loc, Node* new_node_loc){
@@ -133,25 +138,31 @@ void reallocate_node_pointers(Node n, Node* old_node_loc, Node* new_node_loc){
     }
 }
 
+/// @brief Move ast node array to a new mem location
+/// @param new_cap New array capacity
+void reallocate_ast(Ast* ast, size_t new_cap){
+    ast->capacity = new_cap;
+
+    Node* nn = (Node*)realloc(ast->array, sizeof(Node) * ast->capacity);
+    
+    if(nn == NULL){
+        printf("[ERROR] Memory reallocation of failed!\n");
+        free_ast(ast);
+        exit(-1);
+    }
+
+    // move pointers of nodes to point to the new memory locations if a reallocation happens
+    for (size_t i = 0; i < ast->size; ++i){
+        reallocate_node_pointers(ast->array[i], ast->array+i, nn+i);
+    }
+
+    ast->array = nn; // move array pointer
+}
+
 Node* add_node_to_ast(Ast* ast, Node node){
 
     if(ast->used >= ast->capacity){
-        ast->capacity = 2 * ast->capacity;
-        
-        Node* nn = (Node*)realloc(ast->array, sizeof(Node) * ast->capacity);
-
-        if(nn == NULL){
-            printf("[ERROR] Memory reallocation of failed!\n");
-            free_ast(ast);
-            exit(-1);
-        }
-
-        // move pointers of nodes to point to the new memory locations    
-        for (size_t i = 0; i < ast->size; ++i){
-            reallocate_node_pointers(ast->array[i], ast->array+i, nn+i);
-        }
-
-        ast->array = nn; // move array pointer
+        reallocate_ast(ast, 2 * ast->capacity);
     }
 
     ast->array[ast->used++] = node;
@@ -285,5 +296,25 @@ void print_ast(Node* n){
 }
 
 #define print_ast_ln(node) (print_ast(node), printf("\n"))
+
+void build_ast(){
+    init_ast(&ast, 20);
+
+    // build AST
+    node_triple(
+        node_x,
+        node_x,
+        node_x 
+    );
+
+    ast.size = ast.used; // set size of AST right after generating it
+
+    printf("nodes in AST: %ld\n", ast.size);
+
+    // evaluation needs at least as many nodes as AST size for evaluation, reallocate AST to a new location with twice the capacity
+    // this ensures that the AST doesn't have to be reallocated during evaluation, which makes things a bit more tricky to deal with
+    // 2 times capacity is actually an overestimate of additional memory needed but that's a good thing
+    reallocate_ast(&ast, 2 * ast.capacity);
+}
 
 #endif

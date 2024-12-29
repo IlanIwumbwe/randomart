@@ -30,11 +30,9 @@ Node* eval_ast(Node* n, float x, float y){
 
     switch(n->nk){
         case NK_X: 
-            printf("Added number node for x defined in file %s at line %d\n", n->file, n->line);
             return node_number_loc(x, n->line, n->file);
             
         case NK_Y:
-            printf("Added number node for y defined in file %s at line %d\n", n->file, n->line);
             return node_number_loc(y, n->line, n->file);
 
         case NK_ADD:{
@@ -48,8 +46,6 @@ Node* eval_ast(Node* n, float x, float y){
             if(!expect_number(rhs_eval)){
                 return NULL;
             }
-
-            printf("Added number node for add defined in file %s at line %d\n", n->file, n->line);
 
             return node_number_loc(lhs_eval->as.number + rhs_eval->as.number, n->line, n->file);
         }
@@ -65,8 +61,6 @@ Node* eval_ast(Node* n, float x, float y){
             if(!expect_number(rhs_eval)){
                 return NULL;
             }
-
-            printf("Added number node for mult defined in file %s at line %d\n", n->file, n->line);
 
             return node_number_loc(lhs_eval->as.number * rhs_eval->as.number, n->line, n->file);
         }
@@ -89,12 +83,10 @@ Node* eval_ast(Node* n, float x, float y){
                 return NULL;
             }
 
-            printf("Added 3 number nodes and 1 triple node for triple defined in file %s at line %d\n", n->file, n->line);
-
             return node_triple_loc(
-                node_number_loc(first_eval->as.number, first_eval->line, first_eval->file), 
-                node_number_loc(second_eval->as.number, second_eval->line, second_eval->file), 
-                node_number_loc(third_eval->as.number, third_eval->line, third_eval->file),
+                node_number_loc(first_eval->as.number, n->as.triple.first->line, n->as.triple.first->file), 
+                node_number_loc(second_eval->as.number, n->as.triple.second->line, n->as.triple.second->file), 
+                node_number_loc(third_eval->as.number, n->as.triple.third->line, n->as.triple.third->file),
                 n->line,
                 n->file
             );
@@ -116,12 +108,13 @@ Node* eval_ast(Node* n, float x, float y){
 /// @param y 
 /// @return `Node*` which holds the result
 Node* eval(Ast* ast, float x, float y){
-    ast->array_head = ast->array + ast->size - 1; // reset head pointer to top of AST to setup re-evaluation
-    ast->used = ast->size; // reset used counter to overwrite created nodes during previous evaluation
+    find_ast_root(ast);
     
     Node* res = eval_ast(ast->array_head, x, y);
 
+    #ifdef DEBUG
     printf("Nodes added during evaluation: %ld\n", ast->used - ast->size);
+    #endif
 
     return res;
 }
