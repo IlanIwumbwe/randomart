@@ -335,6 +335,7 @@ void build_ast(int depth){
     init_ast(&ast, 20);
 
     // build AST. A and C nodes will follow the grammar rules to generate the AST
+    
     node_triple(
         node_C(depth), 
         node_C(depth),
@@ -347,10 +348,15 @@ void build_ast(int depth){
 
     printf("nodes in AST: %ld\n", ast.size);
 
-    // evaluation needs at least as many nodes as AST size for evaluation, reallocate AST to a new location with twice the capacity
-    // this ensures that the AST doesn't have to be reallocated during evaluation, which makes things a bit more tricky to deal with
-    // 2 times capacity is actually an overestimate of additional memory needed but that's a good thing
-    reallocate_ast(&ast, 2 * ast.capacity);
+    /*
+        In the worst case scenario, we need to create as many nodes as there are in the AST in order to evaluate it. This happens if there's no number nodes
+        in the AST. This means that if we want no reallocations to happen during evaluation i.e we never run our of space in the dynamic array, we need to make 
+        sure that the AST is stored with a capacity that's at least twice as big as the AST size. 
+
+        5 added just to be extra extra safe
+    */
+
+    reallocate_ast(&ast, 2 * (ast.size + 5));
 }
 
 #endif

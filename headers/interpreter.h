@@ -85,9 +85,9 @@ Node* eval_ast(Node* n, float x, float y){
             }
 
             return node_triple_loc(
-                node_number_loc(first_eval->as.number, n->as.triple.first->line, n->as.triple.first->file), 
-                node_number_loc(second_eval->as.number, n->as.triple.second->line, n->as.triple.second->file), 
-                node_number_loc(third_eval->as.number, n->as.triple.third->line, n->as.triple.third->file),
+                first_eval,
+                second_eval,
+                third_eval,
                 n->line,
                 n->file
             );

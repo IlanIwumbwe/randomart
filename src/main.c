@@ -45,9 +45,9 @@ int main(int argc, char* argv[]){
 
     build_ast(depth);
 
-    render_image(&ast);
+    //render_image(&ast);
 
-    //print_ast_ln(eval(&ast, 1.5, 2.5));
+    print_ast_ln(eval(&ast, 1.5, 2.5));
 
     return 0;
 }
