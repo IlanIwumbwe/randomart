@@ -2,6 +2,7 @@
 #define INTERPRETER_H
 
 #include "ast.h"
+#include "utils.h"
 
 /// @brief Checks that the node evaluated correctly to a number node
 /// @param n 
@@ -65,7 +66,7 @@ Node* eval_ast(Node* n, float x, float y){
             return node_number_loc(lhs_eval->as.number * rhs_eval->as.number, n->line, n->file);
         }
 
-        case NK_TRIPLE:
+        case NK_TRIPLE: {
 
             Node* first_eval = eval_ast(n->as.triple.first, x, y);
             Node* second_eval = eval_ast(n->as.triple.second, x, y);
@@ -90,6 +91,7 @@ Node* eval_ast(Node* n, float x, float y){
                 n->line,
                 n->file
             );
+        }
 
         case NK_NUMBER:
             return n;

@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <assert.h>
+#include "utils.h"
 
 #define U64 __uint64_t
 
@@ -41,6 +42,8 @@ struct s_Node {
     Node_as as;
     int line;
     char* file;
+
+    float prob;
 };
 
 typedef struct{
@@ -62,8 +65,8 @@ void init_ast(Ast* ast, size_t capacity){
     } else {
         ast->array = (Node*) malloc(sizeof(Node) * capacity);
         
-        if(ast == NULL){
-            printf("[ERROR] Memory allocation of %ld bytes failed!\n", capacity);
+        if(ast->array == NULL){
+            printf("[ERROR] Memory allocation of %ld elements failed!\n", capacity);
             exit(-1);
         }
 
@@ -151,7 +154,7 @@ void reallocate_ast(Ast* ast, size_t new_cap){
         exit(-1);
     }
 
-    // move pointers of nodes to point to the new memory locations if a reallocation happens
+    // move pointers of nodes to point to the new memory locations if a reallocation happens during AST building
     for (size_t i = 0; i < ast->size; ++i){
         reallocate_node_pointers(ast->array[i], ast->array+i, nn+i);
     }
@@ -249,16 +252,47 @@ Node* node_triple_loc(Node* first, Node* second, Node* third, int line, char* fi
 #define node_triple(first, second, third) node_triple_loc(first, second, third, __LINE__, __FILE__)
 #define node_mult(lhs, rhs) node_mult_loc(lhs, rhs, __LINE__, __FILE__)
 
+Node* node_A(){
+
+    float branch_prob = randrange(0, 1);
+
+    if(branch_prob < 1.0/3.0){
+        return node_number(randrange(-1, 1));
+
+    } else if (branch_prob < 2.0/3.0){
+        return node_x;
+
+    } else {
+        return node_y;
+    }
+}
+
+Node* node_C(int depth){
+
+    float branch_prob = randrange(0, 1);
+
+    if((branch_prob < 1.0/4.0) || (depth == 0)){
+        return node_A();
+
+    } else if (branch_prob < 5.0/8.0){
+        return node_add(node_C(depth - 1), node_C(depth - 1));
+
+    } else {
+        return node_mult(node_C(depth - 1), node_C(depth - 1));
+    }
+
+}
+
 /// @brief Print the AST
 /// @param n 
 void print_ast(Node* n){
 
     switch(n->nk){
         case NK_X: 
-            printf("x "); break;
+            printf("x"); break;
 
         case NK_Y:
-            printf("y "); break;
+            printf("y"); break;
 
         case NK_ADD:
             printf("add(");
@@ -297,17 +331,19 @@ void print_ast(Node* n){
 
 #define print_ast_ln(node) (print_ast(node), printf("\n"))
 
-void build_ast(){
+void build_ast(int depth){
     init_ast(&ast, 20);
 
-    // build AST
+    // build AST. A and C nodes will follow the grammar rules to generate the AST
     node_triple(
-        node_x,
-        node_x,
-        node_x 
+        node_C(depth), 
+        node_C(depth),
+        node_C(depth)
     );
 
     ast.size = ast.used; // set size of AST right after generating it
+
+    print_ast_ln(ast.array_head);
 
     printf("nodes in AST: %ld\n", ast.size);
 
