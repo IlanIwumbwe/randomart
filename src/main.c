@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "../headers/render.h"
-#include "../headers/ast.h"
+#include "../headers/interpreter.h"
 
 Ast ast;
 
@@ -32,7 +32,7 @@ int main(){
 
     // render_image(&ast);
 
-    print_ast_ln(eval(&ast, 1, 1));
+    print_ast_ln(eval(&ast, 1.5, 2.5));
     // print_ast_ln(eval(&ast, 2, 2));
 
     return 0;

@@ -4,7 +4,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "../headers/stb_image_write.h"
 #include <math.h>
-#include "ast.h"
+#include "interpreter.h"
 
 #define IMAGE_SIZE 256
 

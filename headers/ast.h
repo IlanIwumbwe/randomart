@@ -44,11 +44,11 @@ struct s_Node {
 };
 
 typedef struct{
-    Node* n;
+    Node* array;
     size_t used;
     size_t capacity;
 
-    Node* root;
+    Node* array_head;
     size_t size; // size of AST after initial generation
 } Ast;
 
@@ -60,7 +60,7 @@ void init_ast(Ast* ast, size_t capacity){
         printf("[ERROR] Cannot initialise dynamic array with capacity of %ld!\n", capacity);
         exit(-1);
     } else {
-        ast->n = (Node*) malloc(sizeof(Node) * capacity);
+        ast->array = (Node*) malloc(sizeof(Node) * capacity);
         
         if(ast == NULL){
             printf("[ERROR] Memory allocation of %ld bytes failed!\n", capacity);
@@ -92,6 +92,16 @@ void reallocate_node_pointers(Node n, Node* old_node_loc, Node* new_node_loc){
 
             new_node_loc->as.binop.lhs = new_node_loc - lhs_offset;
             new_node_loc->as.binop.rhs = new_node_loc - rhs_offset;
+
+            #ifdef DEBUG
+            printf("reallocating for node in file %s at line %d\n", n.file, n.line);
+
+            printf("old lhs loc %lx ", (U64)n.as.binop.lhs);
+            printf("old rhs loc %lx ", (U64)n.as.binop.rhs);
+            printf("\n");
+            printf("new lhs loc %lx ", (U64)new_node_loc->as.binop.lhs);
+            printf("new rhs loc %lx \n", (U64)new_node_loc->as.binop.rhs);
+            #endif
         }
 
         if(n.nk == NK_TRIPLE){
@@ -103,23 +113,32 @@ void reallocate_node_pointers(Node n, Node* old_node_loc, Node* new_node_loc){
             assert(second_offset > 0);
             assert(third_offset > 0);
 
-            printf("reallocating for node in file %s at line %d\n", n.file, n.line);
-
             new_node_loc->as.triple.first = new_node_loc - first_offset;
             new_node_loc->as.triple.second = new_node_loc - second_offset;
             new_node_loc->as.triple.third = new_node_loc - third_offset;
+
+            #ifdef DEBUG
+            printf("reallocating for node in file %s at line %d\n", n.file, n.line);
+
+            printf("old first loc %lx ", (U64)n.as.triple.first);
+            printf("old second loc %lx ", (U64)n.as.triple.second);
+            printf("old third loc %lx ", (U64)n.as.triple.third);
+            printf("\n");
+            printf("new first loc %lx ", (U64)new_node_loc->as.triple.first);
+            printf("new second loc %lx ", (U64)new_node_loc->as.triple.second);
+            printf("new third loc %lx \n", (U64)new_node_loc->as.triple.third);
+            #endif
         }
 
     }
 }
 
 Node* add_node_to_ast(Ast* ast, Node node){
-    Node* old_ast_loc = ast->n;
 
     if(ast->used >= ast->capacity){
         ast->capacity = 2 * ast->capacity;
         
-        Node* nn = (Node*)realloc(ast->n, sizeof(Node) * ast->capacity);
+        Node* nn = (Node*)realloc(ast->array, sizeof(Node) * ast->capacity);
 
         if(nn == NULL){
             printf("[ERROR] Memory reallocation of failed!\n");
@@ -129,21 +148,19 @@ Node* add_node_to_ast(Ast* ast, Node node){
 
         // move pointers of nodes to point to the new memory locations    
         for (size_t i = 0; i < ast->size; ++i){
-            reallocate_node_pointers(ast->n[i], ast->n+i, nn+i);
+            reallocate_node_pointers(ast->array[i], ast->array+i, nn+i);
         }
 
-        ast->n = nn; // move array pointer
+        ast->array = nn; // move array pointer
     }
 
-    ast->n[ast->used++] = node;
-
-    reallocate_node_pointers(node, old_ast_loc + ast->used, ast->n + ast->used); // useful if a reallocation happens while building the AST  
-
+    ast->array[ast->used++] = node;
+    
     assert(ast->used != 0);
 
-    ast->root = ast->n + ast->used - 1;
+    ast->array_head = ast->array + ast->used - 1; // point to node that just got added
 
-    return ast->root;
+    return ast->array_head;  // return pointer to node that just got added
 }
 
 Node* node_number_loc(float n, int line, char* file){
@@ -154,7 +171,7 @@ Node* node_number_loc(float n, int line, char* file){
     node.file = file;
     node.line = line;
 
-    return add_node_to_ast(&ast, node);
+    return add_node_to_ast(&ast, node); 
 }
 
 Node* node_x_loc(int line, char* file){
@@ -267,120 +284,6 @@ void print_ast(Node* n){
     }
 }
 
-/// @brief Checks that the node evaluated correctly to a number node
-/// @param n 
-/// @return 
-Node* expect_number(Node* n){
-
-    if(n == NULL){
-        printf("[FILE: %s] Node added at line %d failed to evaluate!\n", n->file, n->line);
-        return NULL;
-    }
-    
-    if(n->nk != NK_NUMBER){
-        printf("[FILE: %s] Node added at line %d cannot evaluate to a number!\n", n->file, n->line);
-        return NULL;
-    }
-
-    return n;
-}
-
-/// @brief Interpret the AST
-/// @param n 
-/// @param x 
-/// @param y 
-/// @return 
-Node* eval_ast(Node* n, float x, float y){
-
-    switch(n->nk){
-        case NK_X: 
-            return node_number_loc(x, n->line, n->file);
-            
-        case NK_Y:
-            return node_number_loc(y, n->line, n->file);
-
-        case NK_ADD:{
-            Node* lhs_eval = eval_ast(n->as.binop.lhs, x, y);
-            Node* rhs_eval = eval_ast(n->as.binop.rhs, x, y);
-
-            if(!expect_number(lhs_eval)){
-                return NULL;
-            }
-
-            if(!expect_number(rhs_eval)){
-                return NULL;
-            }
-
-            return node_number_loc(lhs_eval->as.number + rhs_eval->as.number, n->line, n->file);
-        }
-
-        case NK_MULT: {
-            Node* lhs_eval = eval_ast(n->as.binop.lhs, x, y);
-            Node* rhs_eval = eval_ast(n->as.binop.rhs, x, y);
-
-            if(!expect_number(lhs_eval)){
-                return NULL;
-            }
-
-            if(!expect_number(rhs_eval)){
-                return NULL;
-            }
-
-            return node_number_loc(lhs_eval->as.number * rhs_eval->as.number, n->line, n->file);
-        }
-
-        case NK_TRIPLE:
-
-            Node* first_eval = eval_ast(n->as.triple.first, x, y);
-            Node* second_eval = eval_ast(n->as.triple.second, x, y);
-            Node* third_eval = eval_ast(n->as.triple.third, x, y);
-
-            if(!expect_number(first_eval)){
-                return NULL;
-            }
-
-            if(!expect_number(second_eval)){
-                return NULL;
-            }
-
-            if(!expect_number(third_eval)){
-                return NULL;
-            }
-
-            return node_triple_loc(
-                node_number_loc(first_eval->as.number, first_eval->line, first_eval->file), 
-                node_number_loc(second_eval->as.number, second_eval->line, second_eval->file), 
-                node_number_loc(third_eval->as.number, third_eval->line, third_eval->file),
-                n->line,
-                n->file
-            );
-
-        case NK_NUMBER:
-            return n;
-
-        default:
-            printf("[FILE %s] Node added at line %d ", n->file, n->line);
-            printf("should not be able to reach this in eval ast!\n");
-
-            exit(-1);
-    }
-}
-
-/// @brief Evaluate given AST. After evaluation, reset head to point to AST state before evaluation
-/// @param ast 
-/// @param x 
-/// @param y 
-/// @return `Node*` which holds the result
-Node* eval(Ast* ast, float x, float y){
-    ast->root = ast->n + ast->size - 1; // reset head pointer to top of AST to setup re-evaluation
-    ast->used = ast->size; // reset used counter to overwrite created nodes during previous evaluation
-    
-    Node* res = eval_ast(ast->root, x, y);
-
-    return res;
-}
-
 #define print_ast_ln(node) (print_ast(node), printf("\n"))
 
 #endif
-
