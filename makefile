@@ -1,6 +1,6 @@
 SRCS = $(wildcard src/*.c)
 OBJS = $(SRCS:.c=.o)
-FLAGS = -Wextra -Wall
+FLAGS = -Wextra -Wall -Wswitch-enum
 TARGET = randomart
 
 %.o : %.c
@@ -17,4 +17,4 @@ clean:
 	rm -rf $(TARGET) $(OBJS)
 
 debug:
-	$(MAKE) FLAGS="-Wextra -Wall -DDEBUG -g"
+	$(MAKE) FLAGS="-Wextra -Wall -Wswitch-enum -DDEBUG -g"

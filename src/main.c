@@ -47,8 +47,6 @@ int main(int argc, char* argv[]){
 
     render_image(&ast);
 
-    //print_ast_ln(eval(&ast, 10, 3));
-
     return 0;
 }
 

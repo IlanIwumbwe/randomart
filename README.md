@@ -34,9 +34,21 @@ All the images so far use this grammar given in the paper:
 
 ## Extending the grammar
 
-- [x] `if-then-else`
+- [x] `ifgeq-then-else`
 - [x] `mod`
-- [ ] `div`
-- [ ] `sin`
-- [ ] `cos`
-- [ ] `exp`
+- [x] `div`
+- [x] `sin`
+- [x] `cos`
+- [x] `exp`
+
+These are some images produces from ASTs that implement these operators:
+
+| Depth 2 | Depth 5 | Depth 4 |
+|--------|--------|-------|
+| ![c2](images/c2.png) | ![c5](images/c5.png) | ![c4](images/c4.png) |
+| `E(y,add(x, x) >= div(y, y),y)` | Function too big to show here | Function too big to show here |
+
+## Todo
+- [ ] Fix edge case that can sometimes cause failure at depth >= 10
+- [ ] Rewrite the grammar representation. Currently does function calls, but this isn't really scalable. Adding more constructs becomes rather tedious.
+- [ ] Exploration

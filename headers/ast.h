@@ -29,7 +29,7 @@ typedef enum {
     NK_IF_THEN_ELSE = set_bit(12)
 } Node_kind;
 
-#define NK_UNOP (NK_SIN, NK_COS, NK_EXP)
+#define NK_UNOP (NK_SIN | NK_COS | NK_EXP)
 #define NK_BINOP (NK_ADD | NK_MULT | NK_MOD | NK_DIV | NK_GTEQ)
 #define NK_TRIPLE (NK_E | NK_IF_THEN_ELSE)
 
@@ -107,6 +107,14 @@ void reallocate_node_pointers(Node n, Node* old_node_loc, Node* new_node_loc){
 
     if(old_node_loc != new_node_loc){
 
+        if(n.nk & NK_UNOP){
+            unsigned long arg_offset = old_node_loc - n.as.unop;
+
+            assert(arg_offset > 0);
+
+            new_node_loc->as.unop = new_node_loc - arg_offset;
+        }
+
         if(n.nk & NK_BINOP){
             unsigned long lhs_offset = old_node_loc - n.as.binop.lhs;
             unsigned long rhs_offset = old_node_loc - n.as.binop.rhs;
@@ -117,7 +125,7 @@ void reallocate_node_pointers(Node n, Node* old_node_loc, Node* new_node_loc){
             new_node_loc->as.binop.lhs = new_node_loc - lhs_offset;
             new_node_loc->as.binop.rhs = new_node_loc - rhs_offset;
 
-            #ifdef DEBUG
+            #if 0
             printf("reallocating for node in file %s at line %d\n", n.file, n.line);
 
             printf("old lhs loc %lx ", (U64)n.as.binop.lhs);
@@ -141,7 +149,7 @@ void reallocate_node_pointers(Node n, Node* old_node_loc, Node* new_node_loc){
             new_node_loc->as.triple.second = new_node_loc - second_offset;
             new_node_loc->as.triple.third = new_node_loc - third_offset;
 
-            #ifdef DEBUG
+            #if 0
             printf("reallocating for node in file %s at line %d\n", n.file, n.line);
 
             printf("old first loc %lx ", (U64)n.as.triple.first);
@@ -224,6 +232,19 @@ Node* node_y_loc(int line, char* file){
     return add_node_to_ast(&ast, node);
 }
 
+Node* node_unop_loc(Node_kind nk, Node* arg, int line, char* file){
+    assert(nk & NK_UNOP);
+
+    Node node;
+    node.nk = nk;
+
+    node.line = line;
+    node.file = file;
+    node.as.unop = arg;
+
+    return add_node_to_ast(&ast, node);
+}
+
 Node* node_binop_loc(Node_kind nk, Node* lhs, Node* rhs, int line, char* file){
     assert(nk & NK_BINOP);
 
@@ -253,6 +274,7 @@ Node* node_triple_loc(Node_kind nk, Node* first, Node* second, Node* third, int 
     return add_node_to_ast(&ast, node);
 }
 
+#define node_unop(nk, arg) node_unop_loc(nk, arg, __LINE__, __FILE__)
 #define node_binop(nk, lhs, rhs) node_binop_loc(nk, lhs, rhs, __LINE__, __FILE__)
 #define node_triple(nk, first, second, third) node_triple_loc(nk, first, second, third, __LINE__, __FILE__)
 #define node_number(n) node_number_loc(n, __LINE__, __FILE__)
@@ -293,15 +315,30 @@ Node* node_C(int depth){
     if((branch_prob < 1.0/4.0) || (depth == 0)){
         return node_A();
 
-    } else if (branch_prob < 5.0/8.0){
+    } else if (branch_prob < 0.34375){
         return node_binop(NK_ADD, node_C(depth - 1), node_C(depth - 1));
 
-    } else {
+    } else if (branch_prob < 0.4375) {
         return node_binop(NK_MULT, node_C(depth - 1), node_C(depth - 1));
+
+    } else if (branch_prob < 0.53125){
+        return node_binop(NK_DIV, node_C(depth - 1), node_C(depth - 1));
+
+    } else if (branch_prob < 0.625){
+        return node_binop(NK_MOD, node_C(depth - 1), node_C(depth - 1));
+
+    } else if (branch_prob < 0.71875){
+        return node_binop(NK_GTEQ, node_C(depth - 1), node_C(depth - 1));
+
+    } else if (branch_prob < 0.8125){
+        return node_unop(NK_SIN, node_C(depth - 1));
+
+    } else if (branch_prob < 0.90625){
+        return node_unop(NK_COS, node_C(depth - 1));
+
+    } else {
+        return node_unop(NK_EXP, node_C(depth - 1));
     }
-
-    // C
-
 }
 
 /// @brief Print the AST
@@ -363,6 +400,24 @@ void print_ast(Node* n){
             printf(")");
             break;
 
+        case NK_SIN:
+            printf("sin(");
+            print_ast(n->as.unop);
+            printf(")");
+            break;
+
+        case NK_COS:
+            printf("cos(");
+            print_ast(n->as.unop);
+            printf(")");
+            break;
+
+        case NK_EXP:
+            printf("exp(");
+            print_ast(n->as.unop);
+            printf(")");
+            break;
+
         case NK_IF_THEN_ELSE:
             printf("if (");
             print_ast(n->as.triple.first);
@@ -377,7 +432,11 @@ void print_ast(Node* n){
             printf("%f", n->as.number); break;
 
         default:
-            printf("Should not be able to reach this in print ast!\n");
+    
+            printf("[FILE %s] Node added at line %d ", n->file, n->line);
+            printf("should not be able to reach this in print ast!\n");
+            printf("\nkind %d\n", n->nk);
+
             exit(-1);
     }
 }

@@ -128,6 +128,58 @@ Node* eval_ast(Node* n, float x, float y){
             return node_number_loc(fmod(lhs_eval->as.number, rhs_eval->as.number), n->line, n->file);
         }
 
+        case NK_DIV: {
+
+            Node* lhs_eval = eval_ast(n->as.binop.lhs, x, y);
+            Node* rhs_eval = eval_ast(n->as.binop.rhs, x, y);
+
+            if(!expect_number(lhs_eval)){
+                return NULL;
+            }
+
+            if(!expect_number(rhs_eval)){
+                return NULL;
+            }
+
+            if(rhs_eval->as.number == 0.0){
+                rhs_eval->as.number = 1.0;
+            }
+
+            return node_number_loc(lhs_eval->as.number / rhs_eval->as.number, n->line, n->file);
+        }
+        
+        case NK_SIN: {
+
+            Node* eval = eval_ast(n->as.unop, x, y);
+
+            if(!expect_number(eval)){
+                return NULL;
+            }
+            
+            return node_number_loc(sin(eval->as.number), n->line, n->file);
+        }
+
+        case NK_COS: {
+
+            Node* eval = eval_ast(n->as.unop, x, y);
+
+            if(!expect_number(eval)){
+                return NULL;
+            }
+            
+            return node_number_loc(cos(eval->as.number), n->line, n->file);
+        }        
+
+        case NK_EXP: {
+            Node* eval = eval_ast(n->as.unop, x, y);
+
+            if(!expect_number(eval)){
+                return NULL;
+            }
+            
+            return node_number_loc(exp(eval->as.number), n->line, n->file);
+        }
+
         case NK_IF_THEN_ELSE: {
 
             Node* cond_eval = eval_ast(n->as.triple.first, x, y);
@@ -147,8 +199,13 @@ Node* eval_ast(Node* n, float x, float y){
             return n;
 
         default:
-            printf("[FILE %s] Node added at line %d ", n->file, n->line);
-            printf("should not be able to reach this in eval ast!\n");
+            if(n == NULL){
+                printf("Node is NULL!\n");
+            } else {
+                printf("[FILE %s] Node added at line %d ", n->file, n->line);
+                printf("should not be able to reach this in eval ast!\n");
+                printf("\nkind %d\n", n->nk);
+            }
             
             exit(-1);
     }
