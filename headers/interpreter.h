@@ -28,6 +28,7 @@ Node* expect_number(Node* n){
 /// @param y 
 /// @return 
 Node* eval_ast(Node* n, float x, float y){
+    assert(n != NULL);
 
     switch(n->nk){
         case NK_X: 
@@ -219,13 +220,20 @@ Node* eval_ast(Node* n, float x, float y){
 Node* eval(Ast* ast, float x, float y){
     find_ast_root(ast);
     
-    Node* res = eval_ast(ast->array_head, x, y);
+    return eval_ast(ast->array_head, x, y);
+}
 
-    #ifdef DEBUG
-    printf("Nodes added during evaluation: %ld\n", ast->used - ast->size);
-    #endif
+/// @brief Sample AST at random points
+void test_eval(){
+    Node* res = eval(&ast, randrange(-1, 1), randrange(-1,1));
 
-    return res;
+    if(res == NULL){
+        printf("[%s] AST is invalid! Cannot evaluate it\n", __FILE__);
+    } else {
+        printf("Result of evaluation: \n");
+        print_ast_ln(res);
+        printf("Nodes added during evaluation: %ld\n", ast.used - ast.size);
+    }
 }
 
 #endif

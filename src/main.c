@@ -5,39 +5,30 @@
 
 Ast ast;
 
-void usage(){
-    printf("Usage: ./randomart -d [depth] -s [seed]\n");
-}
-
 int main(int argc, char* argv[]){
 
     U64 seed = (U64)time(NULL); 
     int depth = 1;
-    char* end;
+    int test = 0;
+    int error = 0;
 
-    if(argc == 5){
+    if(argc == 6){
+        error += set_depth(argv, 1, &depth) + set_seed(argv, 3, &seed) + set_test(argv, 5, &test);
 
-        if(!strcmp(argv[1], "-d")){
-            depth = strtol(argv[2], &end, 10);
-        } else {
-            usage();
-        }
-
-        if(!strcmp(argv[3], "-s")){
-            seed = strtoll(argv[4], &end, 10);
-        } else {
-            usage();
-        }
+    } else if(argc == 5){
+        error += set_depth(argv, 1, &depth) + set_seed(argv, 3, &seed);
         
+    } else if(argc == 4){
+        error += set_depth(argv, 1, &depth) + set_test(argv, 3, &test);
+
     } else if (argc == 3) {
+        error+= set_depth(argv, 1, &depth);
 
-        if(!strcmp(argv[1], "-d")){
-            depth = strtol(argv[2], &end, 10);
-        } else {
-            usage();
-        }
+    } else if (argc == 2){
+        error = set_test(argv, 1, &test);
+    }
 
-    } else if (argc != 1){
+    if(error){
         usage();
     }
 
@@ -45,7 +36,11 @@ int main(int argc, char* argv[]){
 
     build_ast(depth);
 
-    render_image(&ast);
+    if(test){
+        test_eval(&ast);
+    } else {
+        render_image(&ast);
+    }
 
     return 0;
 }

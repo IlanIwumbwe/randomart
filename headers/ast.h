@@ -281,19 +281,19 @@ Node* node_triple_loc(Node_kind nk, Node* first, Node* second, Node* third, int 
 #define node_x node_x_loc(__LINE__, __FILE__)
 #define node_y node_y_loc(__LINE__, __FILE__)
 
-Node* node_C(int depth);
+Node* C(int depth);
 
-Node* node_E(int depth){
+Node* E(int depth){
     float branch_prob = randrange(0, 1);
 
     if((branch_prob < 0.5) || (depth == 0)){
-        return node_triple(NK_E, node_C(depth), node_C(depth), node_C(depth));
+        return node_triple(NK_E, C(depth), C(depth), C(depth));
     } else {
-        return node_triple(NK_IF_THEN_ELSE, node_C(depth), node_E(depth - 1), node_E(depth - 1));
+        return node_triple(NK_IF_THEN_ELSE, C(depth), E(depth - 1), E(depth - 1));
     }
 }
 
-Node* node_A(){
+Node* A(){
 
     float branch_prob = randrange(0, 1);
 
@@ -308,42 +308,43 @@ Node* node_A(){
     }
 }
 
-Node* node_C(int depth){
+Node* C(int depth){
 
     float branch_prob = randrange(0, 1);
 
     if((branch_prob < 1.0/4.0) || (depth == 0)){
-        return node_A();
+        return A();
 
     } else if (branch_prob < 0.34375){
-        return node_binop(NK_ADD, node_C(depth - 1), node_C(depth - 1));
+        return node_binop(NK_ADD, C(depth - 1), C(depth - 1));
 
     } else if (branch_prob < 0.4375) {
-        return node_binop(NK_MULT, node_C(depth - 1), node_C(depth - 1));
+        return node_binop(NK_MULT, C(depth - 1), C(depth - 1));
 
     } else if (branch_prob < 0.53125){
-        return node_binop(NK_DIV, node_C(depth - 1), node_C(depth - 1));
+        return node_binop(NK_DIV, C(depth - 1), C(depth - 1));
 
     } else if (branch_prob < 0.625){
-        return node_binop(NK_MOD, node_C(depth - 1), node_C(depth - 1));
+        return node_binop(NK_MOD, C(depth - 1), C(depth - 1));
 
     } else if (branch_prob < 0.71875){
-        return node_binop(NK_GTEQ, node_C(depth - 1), node_C(depth - 1));
+        return node_binop(NK_GTEQ, C(depth - 1), C(depth - 1));
 
     } else if (branch_prob < 0.8125){
-        return node_unop(NK_SIN, node_C(depth - 1));
+        return node_unop(NK_SIN, C(depth - 1));
 
     } else if (branch_prob < 0.90625){
-        return node_unop(NK_COS, node_C(depth - 1));
+        return node_unop(NK_COS, C(depth - 1));
 
     } else {
-        return node_unop(NK_EXP, node_C(depth - 1));
+        return node_unop(NK_EXP, C(depth - 1));
     }
 }
 
 /// @brief Print the AST
 /// @param n 
 void print_ast(Node* n){
+    assert(n != NULL);
 
     switch(n->nk){
         case NK_X: 
@@ -465,12 +466,23 @@ void branch_func(){
     );
 }
 
+void incorrect_ast(){
+    node_triple(NK_E,
+        node_x,
+        node_x,
+        node_triple(NK_E,
+            node_x, 
+            node_y, 
+            node_x)
+    );
+}
+
 void build_ast(int depth){
     init_ast(&ast, 20);
 
     // build AST. E, A and C nodes will follow the grammar rules to generate the AST
-    node_E(depth);
-    
+    E(depth);
+
     ast.size = ast.used; // set size of AST right after generating it
 
     print_ast_ln(ast.array_head);

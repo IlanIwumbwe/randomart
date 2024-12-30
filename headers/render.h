@@ -2,7 +2,7 @@
 #define RENDER_H
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "../headers/stb_image_write.h"
+#include "stb_image_write.h"
 #include <math.h>
 #include "interpreter.h"
 
@@ -27,7 +27,10 @@ int render_image(Ast* ast){
 
             Node* res = eval(ast, f_x, f_y); // sample function built from AST
 
-            if(res == NULL){return -1;}
+            if(res == NULL){
+                printf("[%s] AST is invalid! Cannot evaluate it\n", __FILE__);
+                return -1;
+            }
 
             if(res->nk != NK_E){
                 printf("[FILE %s] Final output from AST must be E! AST head added at line %d does not evaluate to that\n", res->file, res->line);

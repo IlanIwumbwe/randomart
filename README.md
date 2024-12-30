@@ -43,9 +43,9 @@ All the images so far use this grammar given in the paper:
 
 These are some images produces from ASTs that implement these operators:
 
-| Depth 2 | Depth 5 | Depth 4 |
+| Depth 2 | Depth 5 | Depth 13 |
 |--------|--------|-------|
-| ![c2](images/c2.png) | ![c5](images/c5.png) | ![c4](images/c4.png) |
+| ![c2](images/c2.png) | ![c5](images/c5.png) | ![c41](images/c41.png) |
 | `E(y,add(x, x) >= div(y, y),y)` | Function too big to show here | Function too big to show here |
 
 ## Todo
