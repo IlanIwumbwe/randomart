@@ -1,7 +1,7 @@
 # Random art
 
 <p align="center" width="100%">
-    <img width="10%" src="images/logo.png">
+    <img width="15%" src="images/logo.png">
 
 Insipired by [Tsoding](https://www.youtube.com/watch?v=3D_h2RE0o0E).
 Original paper [here](http://users.ece.cmu.edu/~adrian/projects/validation/validation.pdf).
