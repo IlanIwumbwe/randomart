@@ -124,16 +124,6 @@ void reallocate_node_pointers(Node n, Node* old_node_loc, Node* new_node_loc){
 
             new_node_loc->as.binop.lhs = new_node_loc - lhs_offset;
             new_node_loc->as.binop.rhs = new_node_loc - rhs_offset;
-
-            #if 0
-            printf("reallocating for node in file %s at line %d\n", n.file, n.line);
-
-            printf("old lhs loc %lx ", (U64)n.as.binop.lhs);
-            printf("old rhs loc %lx ", (U64)n.as.binop.rhs);
-            printf("\n");
-            printf("new lhs loc %lx ", (U64)new_node_loc->as.binop.lhs);
-            printf("new rhs loc %lx \n", (U64)new_node_loc->as.binop.rhs);
-            #endif
         }
 
         if(n.nk & NK_TRIPLE){
@@ -148,18 +138,6 @@ void reallocate_node_pointers(Node n, Node* old_node_loc, Node* new_node_loc){
             new_node_loc->as.triple.first = new_node_loc - first_offset;
             new_node_loc->as.triple.second = new_node_loc - second_offset;
             new_node_loc->as.triple.third = new_node_loc - third_offset;
-
-            #if 0
-            printf("reallocating for node in file %s at line %d\n", n.file, n.line);
-
-            printf("old first loc %lx ", (U64)n.as.triple.first);
-            printf("old second loc %lx ", (U64)n.as.triple.second);
-            printf("old third loc %lx ", (U64)n.as.triple.third);
-            printf("\n");
-            printf("new first loc %lx ", (U64)new_node_loc->as.triple.first);
-            printf("new second loc %lx ", (U64)new_node_loc->as.triple.second);
-            printf("new third loc %lx \n", (U64)new_node_loc->as.triple.third);
-            #endif
         }
 
     }
@@ -315,29 +293,14 @@ Node* C(int depth){
     if((branch_prob < 1.0/4.0) || (depth == 0)){
         return A();
 
-    } else if (branch_prob < 0.34375){
+    } else if (branch_prob < 0.5){
         return node_binop(NK_ADD, C(depth - 1), C(depth - 1));
 
-    } else if (branch_prob < 0.4375) {
+    } else if (branch_prob < 0.75) {
         return node_binop(NK_MULT, C(depth - 1), C(depth - 1));
-
-    } else if (branch_prob < 0.53125){
-        return node_binop(NK_DIV, C(depth - 1), C(depth - 1));
-
-    } else if (branch_prob < 0.625){
-        return node_binop(NK_MOD, C(depth - 1), C(depth - 1));
-
-    } else if (branch_prob < 0.71875){
-        return node_binop(NK_GTEQ, C(depth - 1), C(depth - 1));
-
-    } else if (branch_prob < 0.8125){
-        return node_unop(NK_SIN, C(depth - 1));
-
-    } else if (branch_prob < 0.90625){
-        return node_unop(NK_COS, C(depth - 1));
-
+        
     } else {
-        return node_unop(NK_EXP, C(depth - 1));
+        return node_binop(NK_GTEQ, C(depth - 1), C(depth - 1));
     }
 }
 
@@ -380,9 +343,11 @@ void print_ast(Node* n){
             break;
 
         case NK_GTEQ:
+            printf("geq(");
             print_ast(n->as.binop.lhs);
-            printf(" >= ");
+            printf(", ");
             print_ast(n->as.binop.rhs);
+            printf(")");
             break;
 
         case NK_MOD:
@@ -497,7 +462,9 @@ void build_ast(int depth){
         5 added just to be extra extra safe
     */
 
-    reallocate_ast(&ast, 2 * (ast.size + 5));
+    if((ast.capacity - ast.size) <  2 * (ast.size + 5)){
+        reallocate_ast(&ast, 2 * (ast.size + 5));
+    }
 }
 
 #endif

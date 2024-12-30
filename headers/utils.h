@@ -3,8 +3,10 @@
 
 #include <math.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #define U64 __uint64_t
+#define MAX_DEPTH 8
 
 float randrange(float min, float max){
     assert(max > min);

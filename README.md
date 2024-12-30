@@ -37,9 +37,9 @@ All the images so far use this grammar given in the paper:
 - [x] `ifgeq-then-else`
 - [x] `mod`
 - [x] `div`
-- [x] `sin`
-- [x] `cos`
-- [x] `exp`
+- [ ] `sin`
+- [ ] `cos`
+- [ ] `exp`
 
 These are some images produces from ASTs that implement these operators:
 
@@ -49,6 +49,7 @@ These are some images produces from ASTs that implement these operators:
 | `E(y,add(x, x) >= div(y, y),y)` | Function too big to show here | Function too big to show here |
 
 ## Todo
-- [ ] Fix edge case that can sometimes cause failure at depth >= 10
 - [ ] Rewrite the grammar representation. Currently does function calls, but this isn't really scalable. Adding more constructs becomes rather tedious.
 - [ ] Exploration
+
+**Note:** Nesting depth is currently limited to 8. Higher numbers cause weird issues, but we don't need massive functions anyway. They may noy actually be that useful.

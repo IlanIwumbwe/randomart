@@ -34,7 +34,7 @@ int main(int argc, char* argv[]){
 
     srand(seed);
 
-    build_ast(depth);
+    build_ast(fmin(depth, MAX_DEPTH));
 
     if(test){
         test_eval(&ast);
