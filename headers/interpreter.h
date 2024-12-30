@@ -66,7 +66,7 @@ Node* eval_ast(Node* n, float x, float y){
             return node_number_loc(lhs_eval->as.number * rhs_eval->as.number, n->line, n->file);
         }
 
-        case NK_TRIPLE: {
+        case NK_E: {
 
             Node* first_eval = eval_ast(n->as.triple.first, x, y);
             Node* second_eval = eval_ast(n->as.triple.second, x, y);
@@ -85,12 +85,62 @@ Node* eval_ast(Node* n, float x, float y){
             }
 
             return node_triple_loc(
+                NK_E,
                 first_eval,
                 second_eval,
                 third_eval,
                 n->line,
                 n->file
             );
+        }
+
+        case NK_GTEQ: {
+            Node* lhs_eval = eval_ast(n->as.binop.lhs, x, y);
+            Node* rhs_eval = eval_ast(n->as.binop.rhs, x, y);
+
+            if(!expect_number(lhs_eval)){
+                return NULL;
+            }
+
+            if(!expect_number(rhs_eval)){
+                return NULL;
+            }
+
+            return node_number_loc(lhs_eval->as.number >= rhs_eval->as.number, n->line, n->file);
+        }
+
+        case NK_MOD: {
+            Node* lhs_eval = eval_ast(n->as.binop.lhs, x, y);
+            Node* rhs_eval = eval_ast(n->as.binop.rhs, x, y);
+
+            if(!expect_number(lhs_eval)){
+                return NULL;
+            }
+
+            if(!expect_number(rhs_eval)){
+                return NULL;
+            }
+
+            if(rhs_eval->as.number == 0.0){
+                rhs_eval->as.number = 1.0;
+            }
+
+            return node_number_loc(fmod(lhs_eval->as.number, rhs_eval->as.number), n->line, n->file);
+        }
+
+        case NK_IF_THEN_ELSE: {
+
+            Node* cond_eval = eval_ast(n->as.triple.first, x, y);
+       
+            if(!expect_number(cond_eval)){
+                return NULL;
+            }
+
+            if(cond_eval->as.number){
+                return eval_ast(n->as.triple.second, x, y);
+            } else {
+                return eval_ast(n->as.triple.third, x, y);
+            }
         }
 
         case NK_NUMBER:

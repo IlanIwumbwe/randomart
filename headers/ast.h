@@ -8,15 +8,30 @@
 #include "utils.h"
 
 #define U64 __uint64_t
+#define set_bit(i) (1UL << i)
 
 typedef enum {
-    NK_X,
-    NK_Y,
-    NK_NUMBER,
-    NK_ADD,
-    NK_MULT,
-    NK_TRIPLE,
+    NK_X = set_bit(0), 
+    NK_Y = set_bit(1),
+    NK_NUMBER = set_bit(2),
+    
+    NK_SIN = set_bit(3),
+    NK_COS = set_bit(4),
+    NK_EXP = set_bit(5),
+
+    NK_ADD = set_bit(6),
+    NK_MULT = set_bit(7),
+    NK_MOD = set_bit(8),
+    NK_DIV = set_bit(9),
+    NK_GTEQ = set_bit(10),
+
+    NK_E = set_bit(11),
+    NK_IF_THEN_ELSE = set_bit(12)
 } Node_kind;
+
+#define NK_UNOP (NK_SIN, NK_COS, NK_EXP)
+#define NK_BINOP (NK_ADD | NK_MULT | NK_MOD | NK_DIV | NK_GTEQ)
+#define NK_TRIPLE (NK_E | NK_IF_THEN_ELSE)
 
 typedef struct s_Node Node;
 
@@ -32,6 +47,7 @@ typedef struct{
 } Triple;
 
 typedef union{
+    Node* unop;
     Binop binop;
     Triple triple;
     float number;
@@ -91,7 +107,7 @@ void reallocate_node_pointers(Node n, Node* old_node_loc, Node* new_node_loc){
 
     if(old_node_loc != new_node_loc){
 
-        if((n.nk == NK_ADD) || (n.nk == NK_MULT)){
+        if(n.nk & NK_BINOP){
             unsigned long lhs_offset = old_node_loc - n.as.binop.lhs;
             unsigned long rhs_offset = old_node_loc - n.as.binop.rhs;
 
@@ -112,7 +128,7 @@ void reallocate_node_pointers(Node n, Node* old_node_loc, Node* new_node_loc){
             #endif
         }
 
-        if(n.nk == NK_TRIPLE){
+        if(n.nk & NK_TRIPLE){
             unsigned long first_offset = old_node_loc - n.as.triple.first;
             unsigned long second_offset = old_node_loc - n.as.triple.second;
             unsigned long third_offset = old_node_loc - n.as.triple.third;
@@ -208,9 +224,11 @@ Node* node_y_loc(int line, char* file){
     return add_node_to_ast(&ast, node);
 }
 
-Node* node_add_loc(Node* lhs, Node* rhs, int line, char* file){
+Node* node_binop_loc(Node_kind nk, Node* lhs, Node* rhs, int line, char* file){
+    assert(nk & NK_BINOP);
+
     Node node;
-    node.nk = NK_ADD;
+    node.nk = nk;
 
     node.as.binop.lhs = lhs;
     node.as.binop.rhs = rhs;
@@ -220,21 +238,11 @@ Node* node_add_loc(Node* lhs, Node* rhs, int line, char* file){
     return add_node_to_ast(&ast, node);
 }
 
-Node* node_mult_loc(Node* lhs, Node* rhs, int line, char* file){
+Node* node_triple_loc(Node_kind nk, Node* first, Node* second, Node* third, int line, char* file){
+    assert(nk & NK_TRIPLE);
+    
     Node node;
-    node.nk = NK_MULT;
-
-    node.as.binop.lhs = lhs;
-    node.as.binop.rhs = rhs;
-    node.file = file;
-    node.line = line;
-
-    return add_node_to_ast(&ast, node);
-}
-
-Node* node_triple_loc(Node* first, Node* second, Node* third, int line, char* file){
-    Node node;
-    node.nk = NK_TRIPLE;
+    node.nk = nk;
 
     node.as.triple.first = first;
     node.as.triple.second = second;
@@ -245,12 +253,23 @@ Node* node_triple_loc(Node* first, Node* second, Node* third, int line, char* fi
     return add_node_to_ast(&ast, node);
 }
 
-#define node_add(lhs, rhs) node_add_loc(lhs, rhs, __LINE__, __FILE__)
+#define node_binop(nk, lhs, rhs) node_binop_loc(nk, lhs, rhs, __LINE__, __FILE__)
+#define node_triple(nk, first, second, third) node_triple_loc(nk, first, second, third, __LINE__, __FILE__)
 #define node_number(n) node_number_loc(n, __LINE__, __FILE__)
 #define node_x node_x_loc(__LINE__, __FILE__)
 #define node_y node_y_loc(__LINE__, __FILE__)
-#define node_triple(first, second, third) node_triple_loc(first, second, third, __LINE__, __FILE__)
-#define node_mult(lhs, rhs) node_mult_loc(lhs, rhs, __LINE__, __FILE__)
+
+Node* node_C(int depth);
+
+Node* node_E(int depth){
+    float branch_prob = randrange(0, 1);
+
+    if((branch_prob < 0.5) || (depth == 0)){
+        return node_triple(NK_E, node_C(depth), node_C(depth), node_C(depth));
+    } else {
+        return node_triple(NK_IF_THEN_ELSE, node_C(depth), node_E(depth - 1), node_E(depth - 1));
+    }
+}
 
 Node* node_A(){
 
@@ -275,11 +294,13 @@ Node* node_C(int depth){
         return node_A();
 
     } else if (branch_prob < 5.0/8.0){
-        return node_add(node_C(depth - 1), node_C(depth - 1));
+        return node_binop(NK_ADD, node_C(depth - 1), node_C(depth - 1));
 
     } else {
-        return node_mult(node_C(depth - 1), node_C(depth - 1));
+        return node_binop(NK_MULT, node_C(depth - 1), node_C(depth - 1));
     }
+
+    // C
 
 }
 
@@ -310,8 +331,8 @@ void print_ast(Node* n){
             printf(")");
             break;
 
-        case NK_TRIPLE:
-            printf("triple(");
+        case NK_E:
+            printf("E(");
             print_ast(n->as.triple.first);
             printf(",");
             print_ast(n->as.triple.second);
@@ -320,6 +341,38 @@ void print_ast(Node* n){
             printf(")");
             break;
 
+        case NK_GTEQ:
+            print_ast(n->as.binop.lhs);
+            printf(" >= ");
+            print_ast(n->as.binop.rhs);
+            break;
+
+        case NK_MOD:
+            printf("mod(");
+            print_ast(n->as.binop.lhs);
+            printf(", ");
+            print_ast(n->as.binop.rhs);
+            printf(")");
+            break;
+
+        case NK_DIV:
+            printf("div(");
+            print_ast(n->as.binop.lhs);
+            printf(", ");
+            print_ast(n->as.binop.rhs);
+            printf(")");
+            break;
+
+        case NK_IF_THEN_ELSE:
+            printf("if (");
+            print_ast(n->as.triple.first);
+            printf(") then { ");
+            print_ast(n->as.triple.second);
+            printf(" } else { ");
+            print_ast(n->as.triple.third);
+            printf("}");
+            break;
+        
         case NK_NUMBER:
             printf("%f", n->as.number); break;
 
@@ -331,17 +384,34 @@ void print_ast(Node* n){
 
 #define print_ast_ln(node) (print_ast(node), printf("\n"))
 
+void greyscale(){
+    node_triple(NK_E, node_x, node_x, node_x);
+}
+
+void branch_func(){
+    node_triple(NK_IF_THEN_ELSE,
+        node_binop(NK_GTEQ, node_binop(NK_MULT, node_x, node_y), node_number(0)),
+        node_triple(NK_E, node_x, node_y, node_number(1)),
+        node_triple(NK_E,
+            node_binop(NK_MOD,
+                node_x, 
+                node_y), 
+            node_binop(NK_MOD,
+                node_x, 
+                node_y), 
+            node_binop(NK_MOD,
+                node_x,
+                node_y)
+        )
+    );
+}
+
 void build_ast(int depth){
     init_ast(&ast, 20);
 
-    // build AST. A and C nodes will follow the grammar rules to generate the AST
+    // build AST. E, A and C nodes will follow the grammar rules to generate the AST
+    node_E(depth);
     
-    node_triple(
-        node_C(depth), 
-        node_C(depth),
-        node_C(depth)
-    );
-
     ast.size = ast.used; // set size of AST right after generating it
 
     print_ast_ln(ast.array_head);

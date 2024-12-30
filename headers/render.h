@@ -29,8 +29,8 @@ int render_image(Ast* ast){
 
             if(res == NULL){return -1;}
 
-            if(res->nk != NK_TRIPLE){
-                printf("[FILE %s] Final output from AST must be a triple! AST head added at line %d is not\n", res->file, res->line);
+            if(res->nk != NK_E){
+                printf("[FILE %s] Final output from AST must be E! AST head added at line %d does not evaluate to that\n", res->file, res->line);
                 return -1;
             }
 

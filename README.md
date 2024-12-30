@@ -34,3 +34,9 @@ All the images so far use this grammar given in the paper:
 
 ## Extending the grammar
 
+- [x] `if-then-else`
+- [x] `mod`
+- [ ] `div`
+- [ ] `sin`
+- [ ] `cos`
+- [ ] `exp`
