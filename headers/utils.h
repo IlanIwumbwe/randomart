@@ -8,6 +8,12 @@
 #define U64 __uint64_t
 #define MAX_DEPTH 8
 
+typedef enum{
+    RM_RENDER,
+    RM_TEST,
+    RM_PRINT
+} Run_mode;
+
 float randrange(float min, float max){
     assert(max > min);
     
@@ -15,7 +21,7 @@ float randrange(float min, float max){
 }
 
 void usage(){
-    printf("Usage: ./randomart [-d] _ [-s] _ [-t]\n");
+    printf("Usage: ./randomart [-d] _ [-s] _ [-t(test))/-p(print)]\n");
     printf("Using default options:\n- current time seed\n- depth = 1\n-image render\n");
 }
 
@@ -41,10 +47,13 @@ int set_seed(char* argv[], int flag_pos, U64* seed){
     }
 }
 
-int set_test(char* argv[], int flag_pos, int* test){
+int set_mode(char* argv[], int flag_pos, Run_mode* mode){
 
     if(!strcmp(argv[flag_pos], "-t")){
-        *test = 1;
+        *mode = RM_TEST;
+        return 0;
+    } else if (!strcmp(argv[flag_pos], "-p")){
+        *mode = RM_PRINT;
         return 0;
     } else {
         return -1;

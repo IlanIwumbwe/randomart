@@ -71,36 +71,36 @@ typedef struct{
     size_t size; // size of AST after initial generation
 } Ast;
 
-extern Ast ast;
+Ast ast = {0};
 
-void init_ast(Ast* ast, size_t capacity){
+void init_ast(size_t capacity){
 
     if(capacity <= 0){
         printf("[ERROR] Cannot initialise dynamic array with capacity of %ld!\n", capacity);
         exit(-1);
     } else {
-        ast->array = (Node*) malloc(sizeof(Node) * capacity);
+        ast.array = (Node*) malloc(sizeof(Node) * capacity);
         
-        if(ast->array == NULL){
+        if(ast.array == NULL){
             printf("[ERROR] Memory allocation of %ld elements failed!\n", capacity);
             exit(-1);
         }
 
-        ast->capacity = capacity;
-        ast->used = 0;
+        ast.capacity = capacity;
+        ast.used = 0;
     }
 }
 
-void free_ast(Ast* ast){
-    free(ast);
+void free_ast(){
+    free(ast.array);
     printf("Freed ast memory\n");
 }
 
 /// @brief Reset `array_head` and `used` pointers to point to the root of the AST that was generated. This is required to prepare new evaluation       
 /// @param ast 
-void find_ast_root(Ast* ast){
-    ast->array_head = ast->array + ast->size - 1; // reset head pointer to top of AST to setup re-evaluation
-    ast->used = ast->size; // reset used counter to overwrite created nodes during previous evaluation
+void find_ast_root(){
+    ast.array_head = ast.array + ast.size - 1; // reset head pointer to top of AST to setup re-evaluation
+    ast.used = ast.size; // reset used counter to overwrite created nodes during previous evaluation
 }
 
 void reallocate_node_pointers(Node n, Node* old_node_loc, Node* new_node_loc){
@@ -145,10 +145,10 @@ void reallocate_node_pointers(Node n, Node* old_node_loc, Node* new_node_loc){
 
 /// @brief Move ast node array to a new mem location
 /// @param new_cap New array capacity
-void reallocate_ast(Ast* ast, size_t new_cap){
-    ast->capacity = new_cap;
+void reallocate_ast(size_t new_cap){
+    ast.capacity = new_cap;
 
-    Node* nn = (Node*)realloc(ast->array, sizeof(Node) * ast->capacity);
+    Node* nn = (Node*)realloc(ast.array, sizeof(Node) * ast.capacity);
     
     if(nn == NULL){
         printf("[ERROR] Memory reallocation of failed!\n");
@@ -157,26 +157,26 @@ void reallocate_ast(Ast* ast, size_t new_cap){
     }
 
     // move pointers of nodes to point to the new memory locations if a reallocation happens during AST building
-    for (size_t i = 0; i < ast->size; ++i){
-        reallocate_node_pointers(ast->array[i], ast->array+i, nn+i);
+    for (size_t i = 0; i < ast.size; ++i){
+        reallocate_node_pointers(ast.array[i], ast.array+i, nn+i);
     }
 
-    ast->array = nn; // move array pointer
+    ast.array = nn; // move array pointer
 }
 
-Node* add_node_to_ast(Ast* ast, Node node){
+Node* add_node_to_ast(Node node){
 
-    if(ast->used >= ast->capacity){
-        reallocate_ast(ast, 2 * ast->capacity);
+    if(ast.used >= ast.capacity){
+        reallocate_ast(2 * ast.capacity);
     }
 
-    ast->array[ast->used++] = node;
+    ast.array[ast.used++] = node;
     
-    assert(ast->used != 0);
+    assert(ast.used != 0);
 
-    ast->array_head = ast->array + ast->used - 1; // point to node that just got added
+    ast.array_head = ast.array + ast.used - 1; // point to node that just got added
 
-    return ast->array_head;  // return pointer to node that just got added
+    return ast.array_head;  // return pointer to node that just got added
 }
 
 Node* node_number_loc(float n, int line, char* file){
@@ -187,7 +187,7 @@ Node* node_number_loc(float n, int line, char* file){
     node.file = file;
     node.line = line;
 
-    return add_node_to_ast(&ast, node); 
+    return add_node_to_ast(node); 
 }
 
 Node* node_x_loc(int line, char* file){
@@ -197,7 +197,7 @@ Node* node_x_loc(int line, char* file){
     node.file = file;
     node.line = line;
 
-    return add_node_to_ast(&ast, node);
+    return add_node_to_ast(node);
 }
 
 Node* node_y_loc(int line, char* file){
@@ -207,7 +207,7 @@ Node* node_y_loc(int line, char* file){
     node.file = file;
     node.line = line;
     
-    return add_node_to_ast(&ast, node);
+    return add_node_to_ast(node);
 }
 
 Node* node_unop_loc(Node_kind nk, Node* arg, int line, char* file){
@@ -220,7 +220,7 @@ Node* node_unop_loc(Node_kind nk, Node* arg, int line, char* file){
     node.file = file;
     node.as.unop = arg;
 
-    return add_node_to_ast(&ast, node);
+    return add_node_to_ast(node);
 }
 
 Node* node_binop_loc(Node_kind nk, Node* lhs, Node* rhs, int line, char* file){
@@ -234,7 +234,7 @@ Node* node_binop_loc(Node_kind nk, Node* lhs, Node* rhs, int line, char* file){
     node.file = file;
     node.line = line;
 
-    return add_node_to_ast(&ast, node);
+    return add_node_to_ast(node);
 }
 
 Node* node_triple_loc(Node_kind nk, Node* first, Node* second, Node* third, int line, char* file){
@@ -249,7 +249,7 @@ Node* node_triple_loc(Node_kind nk, Node* first, Node* second, Node* third, int 
     node.file = file;
     node.line = line;
 
-    return add_node_to_ast(&ast, node);
+    return add_node_to_ast(node);
 }
 
 #define node_unop(nk, arg) node_unop_loc(nk, arg, __LINE__, __FILE__)
@@ -258,51 +258,6 @@ Node* node_triple_loc(Node_kind nk, Node* first, Node* second, Node* third, int 
 #define node_number(n) node_number_loc(n, __LINE__, __FILE__)
 #define node_x node_x_loc(__LINE__, __FILE__)
 #define node_y node_y_loc(__LINE__, __FILE__)
-
-Node* C(int depth);
-
-Node* E(int depth){
-    float branch_prob = randrange(0, 1);
-
-    if((branch_prob < 0.5) || (depth == 0)){
-        return node_triple(NK_E, C(depth), C(depth), C(depth));
-    } else {
-        return node_triple(NK_IF_THEN_ELSE, C(depth), E(depth - 1), E(depth - 1));
-    }
-}
-
-Node* A(){
-
-    float branch_prob = randrange(0, 1);
-
-    if(branch_prob < 1.0/3.0){
-        return node_number(randrange(-1, 1));
-
-    } else if (branch_prob < 2.0/3.0){
-        return node_x;
-
-    } else {
-        return node_y;
-    }
-}
-
-Node* C(int depth){
-
-    float branch_prob = randrange(0, 1);
-
-    if((branch_prob < 1.0/4.0) || (depth == 0)){
-        return A();
-
-    } else if (branch_prob < 0.5){
-        return node_binop(NK_ADD, C(depth - 1), C(depth - 1));
-
-    } else if (branch_prob < 0.75) {
-        return node_binop(NK_MULT, C(depth - 1), C(depth - 1));
-        
-    } else {
-        return node_binop(NK_GTEQ, C(depth - 1), C(depth - 1));
-    }
-}
 
 /// @brief Print the AST
 /// @param n 
@@ -440,31 +395,6 @@ void incorrect_ast(){
             node_y, 
             node_x)
     );
-}
-
-void build_ast(int depth){
-    init_ast(&ast, 20);
-
-    // build AST. E, A and C nodes will follow the grammar rules to generate the AST
-    E(depth);
-
-    ast.size = ast.used; // set size of AST right after generating it
-
-    print_ast_ln(ast.array_head);
-
-    printf("nodes in AST: %ld\n", ast.size);
-
-    /*
-        In the worst case scenario, we need to create as many nodes as there are in the AST in order to evaluate it. This happens if there's no number nodes
-        in the AST. This means that if we want no reallocations to happen during evaluation i.e we never run our of space in the dynamic array, we need to make 
-        sure that the AST is stored with a capacity that's at least twice as big as the AST size. 
-
-        5 added just to be extra extra safe
-    */
-
-    if((ast.capacity - ast.size) <  2 * (ast.size + 5)){
-        reallocate_ast(&ast, 2 * (ast.size + 5));
-    }
 }
 
 #endif
