@@ -8,6 +8,7 @@ typedef enum{
     BK_TRIPLE_RULE,
     BK_DOUBLE_RULE,
     BK_SINGLE_RULE,
+    BK_SINGLE_RULE_NODE,
     BK_NO_RULE
 } Branch_kind;
 
@@ -61,7 +62,7 @@ typedef struct {
 Grammar g = {0};
 
 const int N_RULES = 3;
-const int MAX_BRANCHES = 3;
+const int MAX_BRANCHES = 10;
 
 /// @brief Allocate memory for all rules that should be added to the grammar
 /// @param g 
@@ -135,6 +136,19 @@ void add_branch_to_rule(Rule_kind rk, Branch b){
     assert(r->used != 0);
 }
 
+Branch branch_single_rule_node(Rule_kind rk, Node_kind nk, float prob){
+    Rule* rule = g.rule + rk;
+
+    Branch b = {
+        .kind = BK_SINGLE_RULE_NODE,
+        .next_rule = {.one_rule = rule},
+        .node_kind = nk,
+        .prob = prob
+    };
+
+    return b;
+}
+
 Branch branch_single_rule(Rule_kind rk, float prob){
     Rule* rule = g.rule + rk;
 
@@ -186,7 +200,7 @@ Branch branch_no_rule(Node_kind nk, float prob){
     return b;
 }
 
-void paper_grammar(){
+void grammar(){
 
     init_rules(N_RULES);
 
@@ -198,7 +212,7 @@ void paper_grammar(){
 
     assert(g.entry_point != NULL); // entry point must be defined
 
-    add_branch_to_rule(R_E, branch_triple_rule(R_C, R_C, R_C, NK_E, 1.0));
+    add_branch_to_rule(R_E, branch_triple_rule(R_C, R_C, R_C, NK_E, 0.5));
 
     add_branch_to_rule(R_A, branch_no_rule(NK_NUMBER, 1.0/3.0));
     add_branch_to_rule(R_A, branch_no_rule(NK_X, 1.0/3.0));
@@ -224,6 +238,23 @@ void simple_grammar(){
     add_branch_to_rule(R_A, branch_no_rule(NK_Y, 1.0/3.0));
 }
 
+Branch set_current_branch(Rule* rule, int depth){
+    float branch_prob = randrange(0, 1);    
+    Branch current_branch = rule->branch[0];
+
+    if((depth < 0) && (rule->kind != R_A)){   // A is a terminal rule, we have no need to force it to a particular branch
+        return current_branch;
+    }
+
+    for(size_t i = 0; i < rule->used; ++i){
+        current_branch = rule->branch[i];
+        
+        if(branch_prob <= current_branch.prob){break;}
+    }
+
+    return current_branch;
+}
+
 Node* generate_ast(Rule* rule, int depth){
 
     if(rule == NULL){
@@ -233,14 +264,7 @@ Node* generate_ast(Rule* rule, int depth){
 
     switch(rule->kind){
         case R_A: {
-            float branch_prob = randrange(0, 1);
-            Branch current_branch = rule->branch[0];
-
-            for(size_t i = 0; i < rule->used; ++i){
-                current_branch = rule->branch[i];
-                
-                if(branch_prob <= current_branch.prob){break;}
-            }
+            Branch current_branch = set_current_branch(rule, depth);
 
             if(current_branch.node_kind == NK_NUMBER){
                 return node_number(randrange(-1, 1));
@@ -253,21 +277,15 @@ Node* generate_ast(Rule* rule, int depth){
 
         case R_C: {
 
-            if(depth == 0){
-                return generate_ast(g.rule + R_A, 0);
-            }
-
-            float branch_prob = randrange(0, 1);
-            Branch current_branch = rule->branch[0];
-
-            for(size_t i = 0; i < rule->used; ++i){
-                current_branch = rule->branch[i];
-                
-                if(branch_prob <= current_branch.prob){break;}
-            }
+            Branch current_branch = set_current_branch(rule, depth);
 
             if(current_branch.kind == BK_SINGLE_RULE){
                 return generate_ast(current_branch.next_rule.one_rule, depth - 1);
+
+            } else if (current_branch.kind == BK_SINGLE_RULE_NODE){
+                Node* node = generate_ast(current_branch.next_rule.one_rule, depth - 1);
+
+                return node_unop(current_branch.node_kind, node);
 
             } else if (current_branch.kind == BK_DOUBLE_RULE) {
                 assert(current_branch.node_kind & NK_BINOP);
@@ -285,11 +303,9 @@ Node* generate_ast(Rule* rule, int depth){
         }
 
         case R_E: {
-        
-            assert(rule->used == 1);
-            
-            Branch current_branch = rule->branch[0];
 
+            Branch current_branch = set_current_branch(rule, depth);
+                
             assert(current_branch.kind == BK_TRIPLE_RULE);
             
             Node* first = generate_ast(current_branch.next_rule.three_rules.first, depth - 1);

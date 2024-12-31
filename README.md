@@ -43,8 +43,9 @@ All the images so far use this grammar given in the paper:
 - [ ] `exp`
 
 There's code to interpret these additional constructs, so it is possible to write ASTs by hand that use them. They haven't been added to the grammar. The grammar should be easily extendable, for example, the paper grammar is represented like so:
+
 ```C
-void paper_grammar(){
+void grammar(){
 
     init_rules(N_RULES);
 

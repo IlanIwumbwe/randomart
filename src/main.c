@@ -8,7 +8,7 @@ void init(int seed){
 
     srand(seed);
 
-    paper_grammar();
+    grammar();
 
     init_ast(20);
 }
