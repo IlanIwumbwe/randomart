@@ -20,6 +20,12 @@ float randrange(float min, float max){
     return min + (rand() / (float)RAND_MAX) * (max - min);
 }
 
+float map_to_range(float num, float min, float max){
+    assert(max > min);
+
+    return min + (num / (float)RAND_MAX) * (max - min);
+}
+
 void usage(){
     printf("Usage: ./randomart [-d] _ [-s] _ [-t(test))/-p(print)]\n");
     printf("Using default options:\n- current time seed\n- depth = 1\n-image render\n");

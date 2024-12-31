@@ -197,6 +197,7 @@ Node* eval_ast(Node* n, float x, float y){
         }
 
         case NK_NUMBER:
+            n->as.number = map_to_range(n->as.number, -1.0, 1.0); 
             return n;
 
         default:
