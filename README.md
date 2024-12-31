@@ -12,6 +12,8 @@ We can create an image by using a function that maps the (x, y) coordinates of t
 
 ![greyscale](images/greyscale.png)
 
+x and y are mapped to [-1, 1], and so are the numbers from the function. These are then scaled to map to [0,255] for each channel.
+
 What if we could generate the functiion `f` randomly, then evaluate it on the (x, y) input !?
 
 In the context of security, we can use for example an SSH key hash as the seed for RNG before generating the function, in effect, visualising the hash. 
