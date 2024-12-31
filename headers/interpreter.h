@@ -217,15 +217,15 @@ Node* eval_ast(Node* n, float x, float y){
 /// @param x 
 /// @param y 
 /// @return `Node*` which holds the result
-Node* eval(Ast* ast, float x, float y){
-    find_ast_root(ast);
+Node* eval(float x, float y){
+    find_ast_root();
     
-    return eval_ast(ast->array_head, x, y);
+    return eval_ast(ast.array_head, x, y);
 }
 
 /// @brief Sample AST at random points
 void test_eval(){
-    Node* res = eval(&ast, randrange(-1, 1), randrange(-1,1));
+    Node* res = eval(randrange(-1, 1), randrange(-1,1));
 
     if(res == NULL){
         printf("[%s] AST is invalid! Cannot evaluate it\n", __FILE__);

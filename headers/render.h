@@ -15,7 +15,7 @@ typedef struct {
     char a;
 } Pixel;
 
-int render_image(Ast* ast){
+int render_image(){
     float f_x, f_y;
     Pixel canvas[IMAGE_SIZE][IMAGE_SIZE];
 
@@ -25,7 +25,7 @@ int render_image(Ast* ast){
             f_x = ((float)int_x / (float)IMAGE_SIZE) * 2.0 - 1.0;
             f_y = ((float)int_y / (float)IMAGE_SIZE) * 2.0 - 1.0;
 
-            Node* res = eval(ast, f_x, f_y); // sample function built from AST
+            Node* res = eval(f_x, f_y); // sample function built from AST
 
             if(res == NULL){
                 printf("[%s] AST is invalid! Cannot evaluate it\n", __FILE__);
