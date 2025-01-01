@@ -51,7 +51,7 @@ void run(int depth, Run_mode mode){
 int main(int argc, char* argv[]){
 
     U64 seed = (U64)time(NULL); 
-    int depth = 1;
+    int depth = 0;
     Run_mode mode = RM_RENDER;
     int error = 0;
 

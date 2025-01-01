@@ -45,6 +45,7 @@ typedef struct {
 
 struct sRule {
     Rule_kind kind;
+    char* name;
     Branch* branch;
 
     size_t used;
@@ -78,11 +79,12 @@ void init_rules(size_t capacity){
     g.used = 0;
 }
 
-void init_branches(Rule_kind rk, size_t capacity){
+void init_branches(Rule_kind rk, char* name, size_t capacity){
     Rule* rule = g.rule + rk;
 
     rule->branch = (Branch*) malloc(sizeof(Branch) * capacity);
     rule->kind = rk;
+    rule->name = name;
 
     if(rule->branch == NULL){
         printf("[ERROR] Memory allocation of %ld elements failed!\n", capacity);
@@ -204,21 +206,21 @@ void grammar(){
 
     init_rules(N_RULES);
 
-    init_branches(R_E, MAX_BRANCHES); // allocate memory for branches
-    init_branches(R_A, MAX_BRANCHES); // allocate memory for branches
-    init_branches(R_C, MAX_BRANCHES); // allocate memory for branches
+    init_branches(R_E, "E", MAX_BRANCHES); // allocate memory for branches
+    init_branches(R_A, "A", MAX_BRANCHES); // allocate memory for branches
+    init_branches(R_C, "C", MAX_BRANCHES); // allocate memory for branches
 
     g.entry_point = g.rule + R_E;
 
     assert(g.entry_point != NULL); // entry point must be defined
 
-    add_branch_to_rule(R_E, branch_triple_rule(R_C, R_C, R_C, NK_E, 0.5));
+    add_branch_to_rule(R_E, branch_triple_rule(R_C, R_C, R_C, NK_E, 1.0));
 
     add_branch_to_rule(R_A, branch_no_rule(NK_NUMBER, 1.0/3.0));
     add_branch_to_rule(R_A, branch_no_rule(NK_X, 1.0/3.0));
     add_branch_to_rule(R_A, branch_no_rule(NK_Y, 1.0/3.0));
 
-    add_branch_to_rule(R_C, branch_single_rule(R_A, 1.0/3.0));
+    add_branch_to_rule(R_C, branch_single_rule(R_A, 1.0/4.0));
     add_branch_to_rule(R_C, branch_double_rule(R_C, R_C, NK_ADD, 3.0/8.0));
     add_branch_to_rule(R_C, branch_double_rule(R_C, R_C, NK_MULT, 3.0/8.0));
 }
@@ -227,7 +229,7 @@ void simple_grammar(){
 
     init_rules(N_RULES);
 
-    init_branches(R_A, MAX_BRANCHES); // allocate memory for branches
+    init_branches(R_A, "A", MAX_BRANCHES); // allocate memory for branches
 
     g.entry_point = g.rule + R_A;
 
@@ -239,7 +241,8 @@ void simple_grammar(){
 }
 
 Branch set_current_branch(Rule* rule, int depth){
-    float branch_prob = randrange(0, 1);    
+    float branch_prob = randrange(0, 1); 
+    float cummulative_prob = 0.0;   
     Branch current_branch = rule->branch[0];
 
     if((depth < 0) && (rule->kind != R_A)){   // A is a terminal rule, we have no need to force it to a particular branch
@@ -248,8 +251,9 @@ Branch set_current_branch(Rule* rule, int depth){
 
     for(size_t i = 0; i < rule->used; ++i){
         current_branch = rule->branch[i];
-        
-        if(branch_prob <= current_branch.prob){break;}
+        cummulative_prob += current_branch.prob;
+
+        if(branch_prob <= current_branch.prob){break;} // replace with cummulative prob here to choose nodes by paper probabilities
     }
 
     return current_branch;
@@ -270,8 +274,11 @@ Node* generate_ast(Rule* rule, int depth){
                 return node_number(randrange(-1, 1));
             } else if (current_branch.node_kind == NK_X){
                 return node_x;
-            } else {
+            } else if(current_branch.node_kind == NK_Y) {
                 return node_y;
+            } else {
+                printf("Rule A should only produce terminal nodes (number, x, y)!\n");
+                exit(-1);
             }
         }
 
@@ -283,6 +290,7 @@ Node* generate_ast(Rule* rule, int depth){
                 return generate_ast(current_branch.next_rule.one_rule, depth - 1);
 
             } else if (current_branch.kind == BK_SINGLE_RULE_NODE){
+                assert(current_branch.node_kind & NK_UNOP);
                 Node* node = generate_ast(current_branch.next_rule.one_rule, depth - 1);
 
                 return node_unop(current_branch.node_kind, node);
@@ -296,7 +304,7 @@ Node* generate_ast(Rule* rule, int depth){
                 return node_binop(current_branch.node_kind, lhs, rhs);
 
             } else {
-                printf("Rule C should only produce rule A and binary ops!\n");
+                printf("Rule C should produce rule A, binary ops and unary ops!\n");
                 exit(-1);
             }
         
