@@ -62,8 +62,8 @@ typedef struct {
 
 Grammar g = {0};
 
-const int N_RULES = 3;
-const int MAX_BRANCHES = 10;
+const size_t N_RULES = 3;
+const size_t MAX_BRANCHES = 10;
 
 /// @brief Allocate memory for all rules that should be added to the grammar
 /// @param g 
@@ -80,6 +80,12 @@ void init_rules(size_t capacity){
 }
 
 void init_branches(Rule_kind rk, char* name, size_t capacity){
+
+    if(g.used == N_RULES){
+        printf("Define new rule and add memory for it\n");
+        exit(-1);
+    }
+
     Rule* rule = g.rule + rk;
 
     rule->branch = (Branch*) malloc(sizeof(Branch) * capacity);
@@ -93,21 +99,25 @@ void init_branches(Rule_kind rk, char* name, size_t capacity){
 
     rule->capacity = capacity;
     rule->used = 0;
+
+    g.used ++;
 }
 
 /// @brief Free memory used for branches by this rule
 /// @param rule 
 void free_branch_memory(Rule* rule){
     free(rule->branch);
-    printf("Freed branch memory used by this rule\n");
+    printf("Freed branch memory used by %s\n", rule->name);
 }
 
-/// @brief For each rule, free memory used to store each branch, then free memory used to store the rule
+/// @brief For each rule, free memory used to store each branch, then free memory used to store the rule. This may free NULL pointer if you define a grammar that doesn't use all slots 
+/// @brief providec by `N_RULES` 
 void free_grammar(){
-    for(size_t i = 0; i < g.used; ++i){
+    for(size_t i = 0; i < g.capacity; ++i){
         free_branch_memory(g.rule + i);
-        free(g.rule);
     }
+
+    free(g.rule);
     printf("Freed memory used by the grammar\n");
 }
 
@@ -125,12 +135,6 @@ void add_branch_to_rule(Rule_kind rk, Branch b){
         }
 
         r->branch = nb; // move array pointer
-    }
-
-    // if this isn't the first branch to be added for this rule, make the probability cummulative
-    // this makes picking a branch easier and cleaner to write
-    if(r->used != 0){
-        b.prob += r->branch[r->used-1].prob;
     }
 
     r->branch[r->used++] = b;
@@ -193,6 +197,7 @@ Branch branch_triple_rule(Rule_kind first_rk, Rule_kind second_rk, Rule_kind thi
 }
 
 Branch branch_no_rule(Node_kind nk, float prob){
+
     Branch b = {
         .kind = BK_NO_RULE,
         .node_kind = nk,
@@ -200,6 +205,157 @@ Branch branch_no_rule(Node_kind nk, float prob){
     };
 
     return b;
+}
+
+Branch set_current_branch(Rule* rule, int depth){
+
+    Branch current_branch = rule->branch[0];
+
+    if((depth < 0) && (rule->kind != R_A)){   // A is a terminal rule, we have no need to force it to a particular branch
+        return current_branch;
+    }
+
+    float branch_prob = randrange(0, 1); 
+    float cummulative_prob = current_branch.prob;
+
+    for(size_t i = 1; i < rule->used; ++i){
+        if(branch_prob <= cummulative_prob){break;} // replace with cummulative prob here to choose nodes by paper probabilities
+        
+        current_branch = rule->branch[i];
+        cummulative_prob += current_branch.prob;
+    }
+
+    return current_branch;
+}
+
+void print_branch(Branch* b){
+    assert(b != NULL);
+
+    if(b->kind == BK_SINGLE_RULE){
+        printf("%s", b->next_rule.one_rule->name);
+    } else {
+    
+        switch(b->node_kind){
+            case NK_X: 
+                printf("x"); break;
+
+            case NK_Y:
+                printf("y"); break;
+
+            case NK_ADD:
+                printf("add(");
+                printf("%s", b->next_rule.two_rules.lhs->name);
+                printf(", ");
+                printf("%s", b->next_rule.two_rules.rhs->name);
+                printf(")");
+                break;
+
+            case NK_MULT:
+                printf("mult(");
+                printf("%s", b->next_rule.two_rules.lhs->name);
+                printf(", ");
+                printf("%s", b->next_rule.two_rules.rhs->name);
+                printf(")");
+                break;
+
+            case NK_E:
+                printf("(");
+                printf("%s", b->next_rule.three_rules.first->name);
+                printf(",");
+                printf("%s", b->next_rule.three_rules.second->name);
+                printf(",");
+                printf("%s", b->next_rule.three_rules.third->name);
+                printf(")");
+                break;
+
+            case NK_GTEQ:
+                printf("geq(");
+                printf("%s", b->next_rule.two_rules.lhs->name);
+                printf(", ");
+                printf("%s", b->next_rule.two_rules.rhs->name);
+                printf(")");
+                break;
+
+            case NK_MOD:
+                printf("mod(");
+                printf("%s", b->next_rule.two_rules.lhs->name);
+                printf(", ");
+                printf("%s", b->next_rule.two_rules.rhs->name);
+                printf(")");
+                break;
+
+            case NK_DIV:
+                printf("div(");
+                printf("%s", b->next_rule.two_rules.lhs->name);
+                printf(", ");
+                printf("%s", b->next_rule.two_rules.rhs->name);
+                printf(")");
+                break;
+
+            case NK_SIN:
+                printf("sin(");
+                printf("%s", b->next_rule.one_rule->name);
+                printf(")");
+                break;
+
+            case NK_COS:
+                printf("sin(");
+                printf("%s", b->next_rule.one_rule->name);
+                printf(")");
+                break;
+
+            case NK_EXP:
+                printf("sin(");
+                printf("%s", b->next_rule.one_rule->name);
+                printf(")");
+                break;
+
+            case NK_IF_THEN_ELSE:
+                printf("if(");
+                printf("%s", b->next_rule.three_rules.first->name);
+                printf(") then {");
+                printf("%s", b->next_rule.three_rules.second->name);
+                printf("} else {");
+                printf("%s", b->next_rule.three_rules.third->name);
+                printf("}");
+                break;
+            
+            case NK_NUMBER:
+                printf("random number [-1 1]"); break;
+
+            default:
+                printf("Node added to grammar unknown!\n");
+                exit(-1);
+        }
+    }
+
+    printf(" [%f]", b->prob);
+}
+
+void print_branches(Rule rule){
+
+    printf("%s ::= ", rule.name);
+    
+    for(size_t i = 0; i < rule.used; ++i){
+        
+        print_branch(rule.branch + i);        
+
+        if(i != rule.used-1){
+            printf(" | ");
+        }
+    }
+}
+
+void print_grammar(){
+    printf("GRAMMAR: \n");
+    for(size_t i = 0; i < g.capacity; ++i){
+        if(g.rule[i].name){
+            print_branches(g.rule[i]);
+            printf("\n");
+        }
+    }
+
+    printf("\n");
 }
 
 void grammar(){
@@ -220,43 +376,10 @@ void grammar(){
     add_branch_to_rule(R_A, branch_no_rule(NK_X, 1.0/3.0));
     add_branch_to_rule(R_A, branch_no_rule(NK_Y, 1.0/3.0));
 
-    add_branch_to_rule(R_C, branch_single_rule(R_A, 1.0/4.0));
-    add_branch_to_rule(R_C, branch_double_rule(R_C, R_C, NK_ADD, 3.0/8.0));
-    add_branch_to_rule(R_C, branch_double_rule(R_C, R_C, NK_MULT, 3.0/8.0));
-}
-
-void simple_grammar(){
-
-    init_rules(N_RULES);
-
-    init_branches(R_A, "A", MAX_BRANCHES); // allocate memory for branches
-
-    g.entry_point = g.rule + R_A;
-
-    assert(g.entry_point != NULL); // entry point must be defined
-
-    add_branch_to_rule(R_A, branch_no_rule(NK_NUMBER, 1.0/3.0));
-    add_branch_to_rule(R_A, branch_no_rule(NK_X, 1.0/3.0));
-    add_branch_to_rule(R_A, branch_no_rule(NK_Y, 1.0/3.0));
-}
-
-Branch set_current_branch(Rule* rule, int depth){
-    float branch_prob = randrange(0, 1); 
-    float cummulative_prob = 0.0;   
-    Branch current_branch = rule->branch[0];
-
-    if((depth < 0) && (rule->kind != R_A)){   // A is a terminal rule, we have no need to force it to a particular branch
-        return current_branch;
-    }
-
-    for(size_t i = 0; i < rule->used; ++i){
-        current_branch = rule->branch[i];
-        cummulative_prob += current_branch.prob;
-
-        if(branch_prob <= current_branch.prob){break;} // replace with cummulative prob here to choose nodes by paper probabilities
-    }
-
-    return current_branch;
+    add_branch_to_rule(R_C, branch_single_rule(R_A, 0.25));
+    add_branch_to_rule(R_C, branch_double_rule(R_C, R_C, NK_ADD, 0.25));
+    add_branch_to_rule(R_C, branch_double_rule(R_C, R_C, NK_MULT, 0.25));
+    add_branch_to_rule(R_C, branch_single_rule_node(R_C, NK_SIN, 0.25));
 }
 
 Node* generate_ast(Rule* rule, int depth){

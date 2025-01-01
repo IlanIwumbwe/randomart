@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 #define U64 __uint64_t
-#define MAX_DEPTH 8
+#define MAX_DEPTH 10
 
 typedef enum{
     RM_RENDER,
@@ -19,6 +19,11 @@ float randrange(float min, float max){
     
     return min + (rand() / (float)RAND_MAX) * (max - min);
 }
+
+float clamp(float x, float min, float max){
+    if(x <= min){return min;}
+    if(x > max){return max;} else {return x;}
+}  
 
 void usage(){
     printf("Usage: ./randomart [-d] _ [-s] _ [-t(test))/-p(print)]\n");

@@ -143,6 +143,8 @@ void reallocate_node_pointers(Node n, Node* old_node_loc, Node* new_node_loc){
     }
 }
 
+void free_grammar();
+
 /// @brief Move ast node array to a new mem location
 /// @param new_cap New array capacity
 void reallocate_ast(size_t new_cap){
@@ -153,6 +155,7 @@ void reallocate_ast(size_t new_cap){
     if(nn == NULL){
         printf("[ERROR] Memory reallocation of failed!\n");
         free_ast(ast);
+        free_grammar();
         exit(-1);
     }
 

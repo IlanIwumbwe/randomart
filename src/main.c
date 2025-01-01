@@ -10,6 +10,8 @@ void init(int seed){
 
     grammar();
 
+    print_grammar();
+
     init_ast(20);
 }
 
@@ -22,7 +24,7 @@ void build_ast(int depth){
 
     print_ast_ln(ast.array_head);
 
-    printf("nodes in AST: %ld\n", ast.size);
+    printf("nodes in AST: %ld\n\n", ast.size);
 
     /*
         In the worst case scenario, we need to create as many nodes as there are in the AST in order to evaluate it. This happens if there's no number nodes

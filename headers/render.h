@@ -37,9 +37,9 @@ int render_image(){
                 return -1;
             }
 
-            canvas[int_y][int_x].r = ((res->as.triple.first->as.number+1)/2.0) * 255;
-            canvas[int_y][int_x].g = ((res->as.triple.second->as.number+1)/2.0) * 255;
-            canvas[int_y][int_x].b = ((res->as.triple.third->as.number+1)/2.0) * 255;
+            canvas[int_y][int_x].r = (res->as.triple.first->as.number+1)/2.0 * 255;
+            canvas[int_y][int_x].g = (res->as.triple.second->as.number+1)/2.0 * 255;
+            canvas[int_y][int_x].b = (res->as.triple.third->as.number+1)/2.0 * 255;
             canvas[int_y][int_x].a = 255;
         }
     }
