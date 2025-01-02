@@ -7,19 +7,17 @@
 /// @brief Checks that the node evaluated correctly to a number node
 /// @param n 
 /// @return 
-Node* expect_number(Node* n){
+void expect_number(Node* n){
 
     if(n == NULL){
         printf("[FILE: %s] Node added at line %d failed to evaluate!\n", n->file, n->line);
-        return NULL;
+        exit(-1);
     }
     
     if(n->nk != NK_NUMBER){
         printf("[FILE: %s] Node added at line %d cannot evaluate to a number!\n", n->file, n->line);
-        return NULL;
+        exit(-1);
     }
-
-    return n;
 }
 
 /// @brief Interpret the AST
@@ -27,8 +25,8 @@ Node* expect_number(Node* n){
 /// @param x 
 /// @param y 
 /// @return 
-Node* eval_ast(Node* n, float x, float y){
-    assert(n != NULL);
+size_t eval_ast(size_t index, float x, float y){
+    Node* n = ast.array + index;
 
     switch(n->nk){
         case NK_X: 
@@ -38,89 +36,61 @@ Node* eval_ast(Node* n, float x, float y){
             return node_number_loc(y, n->line, n->file);
 
         case NK_ADD:{
-            Node* lhs_eval = eval_ast(n->as.binop.lhs, x, y);
-            Node* rhs_eval = eval_ast(n->as.binop.rhs, x, y);
+            Node* lhs_eval = ast.array + eval_ast(n->as.binop.lhs, x, y);
+            Node* rhs_eval = ast.array + eval_ast(n->as.binop.rhs, x, y);
 
-            if(!expect_number(lhs_eval)){
-                return NULL;
-            }
-
-            if(!expect_number(rhs_eval)){
-                return NULL;
-            }
+            expect_number(lhs_eval);
+            expect_number(rhs_eval);
 
             return node_number_loc(lhs_eval->as.number + rhs_eval->as.number, n->line, n->file);
         }
 
         case NK_MULT: {
-            Node* lhs_eval = eval_ast(n->as.binop.lhs, x, y);
-            Node* rhs_eval = eval_ast(n->as.binop.rhs, x, y);
+            Node* lhs_eval = ast.array + eval_ast(n->as.binop.lhs, x, y);
+            Node* rhs_eval = ast.array + eval_ast(n->as.binop.rhs, x, y);
 
-            if(!expect_number(lhs_eval)){
-                return NULL;
-            }
-
-            if(!expect_number(rhs_eval)){
-                return NULL;
-            }
+            expect_number(lhs_eval);
+            expect_number(rhs_eval);
 
             return node_number_loc(lhs_eval->as.number * rhs_eval->as.number, n->line, n->file);
         }
 
         case NK_E: {
 
-            Node* first_eval = eval_ast(n->as.triple.first, x, y);
-            Node* second_eval = eval_ast(n->as.triple.second, x, y);
-            Node* third_eval = eval_ast(n->as.triple.third, x, y);
+            size_t first_eval_index = eval_ast(n->as.triple.first, x, y);
+            size_t second_eval_index = eval_ast(n->as.triple.second, x, y);
+            size_t third_eval_index = eval_ast(n->as.triple.third, x, y);
 
-            if(!expect_number(first_eval)){
-                return NULL;
-            }
-
-            if(!expect_number(second_eval)){
-                return NULL;
-            }
-
-            if(!expect_number(third_eval)){
-                return NULL;
-            }
+            expect_number(ast.array + first_eval_index);
+            expect_number(ast.array + second_eval_index);
+            expect_number(ast.array + third_eval_index);
 
             return node_triple_loc(
                 NK_E,
-                first_eval,
-                second_eval,
-                third_eval,
+                first_eval_index,
+                second_eval_index,
+                third_eval_index,
                 n->line,
                 n->file
             );
         }
 
         case NK_GTEQ: {
-            Node* lhs_eval = eval_ast(n->as.binop.lhs, x, y);
-            Node* rhs_eval = eval_ast(n->as.binop.rhs, x, y);
+            Node* lhs_eval = ast.array + eval_ast(n->as.binop.lhs, x, y);
+            Node* rhs_eval = ast.array + eval_ast(n->as.binop.rhs, x, y);
 
-            if(!expect_number(lhs_eval)){
-                return NULL;
-            }
-
-            if(!expect_number(rhs_eval)){
-                return NULL;
-            }
+            expect_number(lhs_eval);
+            expect_number(rhs_eval);
 
             return node_number_loc(lhs_eval->as.number >= rhs_eval->as.number, n->line, n->file);
         }
 
         case NK_MOD: {
-            Node* lhs_eval = eval_ast(n->as.binop.lhs, x, y);
-            Node* rhs_eval = eval_ast(n->as.binop.rhs, x, y);
+            Node* lhs_eval = ast.array + eval_ast(n->as.binop.lhs, x, y);
+            Node* rhs_eval = ast.array + eval_ast(n->as.binop.rhs, x, y);
 
-            if(!expect_number(lhs_eval)){
-                return NULL;
-            }
-
-            if(!expect_number(rhs_eval)){
-                return NULL;
-            }
+            expect_number(lhs_eval);
+            expect_number(rhs_eval);
 
             if(rhs_eval->as.number == 0.0){
                 rhs_eval->as.number = 1.0;
@@ -131,16 +101,11 @@ Node* eval_ast(Node* n, float x, float y){
 
         case NK_DIV: {
 
-            Node* lhs_eval = eval_ast(n->as.binop.lhs, x, y);
-            Node* rhs_eval = eval_ast(n->as.binop.rhs, x, y);
+            Node* lhs_eval = ast.array + eval_ast(n->as.binop.lhs, x, y);
+            Node* rhs_eval = ast.array + eval_ast(n->as.binop.rhs, x, y);
 
-            if(!expect_number(lhs_eval)){
-                return NULL;
-            }
-
-            if(!expect_number(rhs_eval)){
-                return NULL;
-            }
+            expect_number(lhs_eval);
+            expect_number(rhs_eval);
 
             if(rhs_eval->as.number == 0.0){
                 rhs_eval->as.number = 1.0;
@@ -151,44 +116,37 @@ Node* eval_ast(Node* n, float x, float y){
         
         case NK_SIN: {
 
-            Node* eval = eval_ast(n->as.unop, x, y);
+            Node* eval = ast.array + eval_ast(n->as.unop, x, y);
 
-            if(!expect_number(eval)){
-                return NULL;
-            }
+            expect_number(eval);
             
             return node_number_loc(sin(eval->as.number), n->line, n->file);
         }
 
         case NK_COS: {
 
-            Node* eval = eval_ast(n->as.unop, x, y);
+            Node* eval = ast.array + eval_ast(n->as.unop, x, y);
 
-            if(!expect_number(eval)){
-                return NULL;
-            }
+            expect_number(eval);
             
             return node_number_loc(cos(eval->as.number), n->line, n->file);
         }        
 
         case NK_EXP: {
-            Node* eval = eval_ast(n->as.unop, x, y);
+            Node* eval = ast.array + eval_ast(n->as.unop, x, y);
 
-            if(!expect_number(eval)){
-                return NULL;
-            }
+            expect_number(eval);
             
             return node_number_loc(exp(eval->as.number), n->line, n->file);
         }
 
         case NK_IF_THEN_ELSE: {
 
-            Node* cond_eval = eval_ast(n->as.triple.first, x, y);
-       
-            if(!expect_number(cond_eval)){
-                return NULL;
-            }
+            size_t cond_eval_index = eval_ast(n->as.triple.first, x, y);
+            Node* cond_eval = ast.array + cond_eval_index;
 
+            expect_number(cond_eval);
+       
             if(cond_eval->as.number){
                 return eval_ast(n->as.triple.second, x, y);
             } else {
@@ -197,7 +155,7 @@ Node* eval_ast(Node* n, float x, float y){
         }
 
         case NK_NUMBER:
-            return n;
+            return index;
 
         default:
             if(n == NULL){
@@ -217,7 +175,7 @@ Node* eval_ast(Node* n, float x, float y){
 /// @param x 
 /// @param y 
 /// @return `Node*` which holds the result
-Node* eval(float x, float y){
+size_t eval(float x, float y){
     find_ast_root();
     
     return eval_ast(ast.array_head, x, y);
@@ -225,15 +183,11 @@ Node* eval(float x, float y){
 
 /// @brief Sample AST at random points
 void test_eval(){
-    Node* res = eval(randrange(-1, 1), randrange(-1,1));
+    size_t res = eval(randrange(-1, 1), randrange(-1,1));
 
-    if(res == NULL){
-        printf("[%s] AST is invalid! Cannot evaluate it\n", __FILE__);
-    } else {
-        printf("Result of evaluation: \n");
-        print_ast_ln(res);
-        printf("Nodes added during evaluation: %ld\n", ast.used - ast.size);
-    }
+    printf("Result of evaluation: \n");
+    print_ast_ln(res);
+    printf("Nodes added during evaluation: %ld\n", ast.used - ast.size);
 }
 
 #endif

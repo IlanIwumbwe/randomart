@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 #define U64 __uint64_t
-#define MAX_DEPTH 10
+#define MAX_DEPTH 50
 
 typedef enum{
     RM_RENDER,

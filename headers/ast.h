@@ -36,18 +36,18 @@ typedef enum {
 typedef struct s_Node Node;
 
 typedef struct{
-    Node* rhs;
-    Node* lhs;    
+    size_t rhs;
+    size_t lhs;    
 } Binop;
 
 typedef struct{
-    Node* first;
-    Node* second; 
-    Node* third;  
+    size_t first;
+    size_t second; 
+    size_t third;  
 } Triple;
 
 typedef union{
-    Node* unop;
+    size_t unop;
     Binop binop;
     Triple triple;
     float number;
@@ -67,7 +67,7 @@ typedef struct{
     size_t used;
     size_t capacity;
 
-    Node* array_head;
+    size_t array_head;
     size_t size; // size of AST after initial generation
 } Ast;
 
@@ -99,48 +99,10 @@ void free_ast(){
 /// @brief Reset `array_head` and `used` pointers to point to the root of the AST that was generated. This is required to prepare new evaluation       
 /// @param ast 
 void find_ast_root(){
-    ast.array_head = ast.array + ast.size - 1; // reset head pointer to top of AST to setup re-evaluation
+    assert(ast.size != 0);
+
+    ast.array_head = ast.size - 1; // reset head pointer to top of AST to setup re-evaluation
     ast.used = ast.size; // reset used counter to overwrite created nodes during previous evaluation
-}
-
-void reallocate_node_pointers(Node n, Node* old_node_loc, Node* new_node_loc){
-
-    if(old_node_loc != new_node_loc){
-
-        if(n.nk & NK_UNOP){
-            unsigned long arg_offset = old_node_loc - n.as.unop;
-
-            assert(arg_offset > 0);
-
-            new_node_loc->as.unop = new_node_loc - arg_offset;
-        }
-
-        if(n.nk & NK_BINOP){
-            unsigned long lhs_offset = old_node_loc - n.as.binop.lhs;
-            unsigned long rhs_offset = old_node_loc - n.as.binop.rhs;
-
-            assert(lhs_offset > 0);
-            assert(rhs_offset > 0);
-
-            new_node_loc->as.binop.lhs = new_node_loc - lhs_offset;
-            new_node_loc->as.binop.rhs = new_node_loc - rhs_offset;
-        }
-
-        if(n.nk & NK_TRIPLE){
-            unsigned long first_offset = old_node_loc - n.as.triple.first;
-            unsigned long second_offset = old_node_loc - n.as.triple.second;
-            unsigned long third_offset = old_node_loc - n.as.triple.third;
-
-            assert(first_offset > 0);
-            assert(second_offset > 0);
-            assert(third_offset > 0);
-
-            new_node_loc->as.triple.first = new_node_loc - first_offset;
-            new_node_loc->as.triple.second = new_node_loc - second_offset;
-            new_node_loc->as.triple.third = new_node_loc - third_offset;
-        }
-
-    }
 }
 
 void free_grammar();
@@ -159,15 +121,10 @@ void reallocate_ast(size_t new_cap){
         exit(-1);
     }
 
-    // move pointers of nodes to point to the new memory locations if a reallocation happens during AST building
-    for (size_t i = 0; i < ast.size; ++i){
-        reallocate_node_pointers(ast.array[i], ast.array+i, nn+i);
-    }
-
     ast.array = nn; // move array pointer
 }
 
-Node* add_node_to_ast(Node node){
+size_t add_node_to_ast(Node node){
 
     if(ast.used >= ast.capacity){
         reallocate_ast(2 * ast.capacity);
@@ -177,12 +134,12 @@ Node* add_node_to_ast(Node node){
     
     assert(ast.used != 0);
 
-    ast.array_head = ast.array + ast.used - 1; // point to node that just got added
+    ast.array_head = ast.used - 1;
 
-    return ast.array_head;  // return pointer to node that just got added
+    return ast.used - 1;  // return pointer to node that just got added
 }
 
-Node* node_number_loc(float n, int line, char* file){
+size_t node_number_loc(float n, int line, char* file){
     Node node;
     node.nk = NK_NUMBER;
 
@@ -193,7 +150,7 @@ Node* node_number_loc(float n, int line, char* file){
     return add_node_to_ast(node); 
 }
 
-Node* node_x_loc(int line, char* file){
+size_t node_x_loc(int line, char* file){
     Node node;
     node.nk = NK_X;
 
@@ -203,7 +160,7 @@ Node* node_x_loc(int line, char* file){
     return add_node_to_ast(node);
 }
 
-Node* node_y_loc(int line, char* file){
+size_t node_y_loc(int line, char* file){
     Node node;
     node.nk = NK_Y;
 
@@ -213,7 +170,7 @@ Node* node_y_loc(int line, char* file){
     return add_node_to_ast(node);
 }
 
-Node* node_unop_loc(Node_kind nk, Node* arg, int line, char* file){
+size_t node_unop_loc(Node_kind nk, size_t arg, int line, char* file){
     assert(nk & NK_UNOP);
 
     Node node;
@@ -226,7 +183,7 @@ Node* node_unop_loc(Node_kind nk, Node* arg, int line, char* file){
     return add_node_to_ast(node);
 }
 
-Node* node_binop_loc(Node_kind nk, Node* lhs, Node* rhs, int line, char* file){
+size_t node_binop_loc(Node_kind nk, size_t lhs, size_t rhs, int line, char* file){
     assert(nk & NK_BINOP);
 
     Node node;
@@ -240,7 +197,7 @@ Node* node_binop_loc(Node_kind nk, Node* lhs, Node* rhs, int line, char* file){
     return add_node_to_ast(node);
 }
 
-Node* node_triple_loc(Node_kind nk, Node* first, Node* second, Node* third, int line, char* file){
+size_t node_triple_loc(Node_kind nk, size_t first, size_t second, size_t third, int line, char* file){
     assert(nk & NK_TRIPLE);
     
     Node node;
@@ -264,8 +221,8 @@ Node* node_triple_loc(Node_kind nk, Node* first, Node* second, Node* third, int 
 
 /// @brief Print the AST
 /// @param n 
-void print_ast(Node* n){
-    assert(n != NULL);
+void print_ast(size_t node_index){
+    Node* n = ast.array + node_index;
 
     switch(n->nk){
         case NK_X: 
