@@ -27,8 +27,8 @@ Node* expect_number(Node* n){
 /// @param x 
 /// @param y 
 /// @return 
-Node* eval_ast(Node* n, float x, float y){
-    assert(n != NULL);
+size_t eval_ast(size_t index, float x, float y){
+    Node* n = ast.array + index;
 
     switch(n->nk){
         case NK_X: 
@@ -38,8 +38,8 @@ Node* eval_ast(Node* n, float x, float y){
             return node_number_loc(y, n->line, n->file);
 
         case NK_ADD:{
-            Node* lhs_eval = eval_ast(n->as.binop.lhs, x, y);
-            Node* rhs_eval = eval_ast(n->as.binop.rhs, x, y);
+            Node* lhs_eval = ast.array + eval_ast(n->as.binop.lhs, x, y);
+            Node* rhs_eval = ast.array + eval_ast(n->as.binop.rhs, x, y);
 
             if(!expect_number(lhs_eval)){
                 return NULL;
@@ -53,8 +53,8 @@ Node* eval_ast(Node* n, float x, float y){
         }
 
         case NK_MULT: {
-            Node* lhs_eval = eval_ast(n->as.binop.lhs, x, y);
-            Node* rhs_eval = eval_ast(n->as.binop.rhs, x, y);
+            Node* lhs_eval = ast.array + eval_ast(n->as.binop.lhs, x, y);
+            Node* rhs_eval = ast.array + eval_ast(n->as.binop.rhs, x, y);
 
             if(!expect_number(lhs_eval)){
                 return NULL;
@@ -69,35 +69,35 @@ Node* eval_ast(Node* n, float x, float y){
 
         case NK_E: {
 
-            Node* first_eval = eval_ast(n->as.triple.first, x, y);
-            Node* second_eval = eval_ast(n->as.triple.second, x, y);
-            Node* third_eval = eval_ast(n->as.triple.third, x, y);
+            size_t first_eval_index = eval_ast(n->as.triple.first, x, y);
+            size_t second_eval_index = eval_ast(n->as.triple.second, x, y);
+            size_t third_eval_index = eval_ast(n->as.triple.third, x, y);
 
-            if(!expect_number(first_eval)){
+            if(!expect_number(ast.array + first_eval_index)){
                 return NULL;
             }
 
-            if(!expect_number(second_eval)){
+            if(!expect_number(ast.array + second_eval_index)){
                 return NULL;
             }
 
-            if(!expect_number(third_eval)){
+            if(!expect_number(ast.array + third_eval_index)){
                 return NULL;
             }
 
             return node_triple_loc(
                 NK_E,
-                first_eval,
-                second_eval,
-                third_eval,
+                first_eval_index,
+                second_eval_index,
+                third_eval_index,
                 n->line,
                 n->file
             );
         }
 
         case NK_GTEQ: {
-            Node* lhs_eval = eval_ast(n->as.binop.lhs, x, y);
-            Node* rhs_eval = eval_ast(n->as.binop.rhs, x, y);
+            Node* lhs_eval = ast.array + eval_ast(n->as.binop.lhs, x, y);
+            Node* rhs_eval = ast.array + eval_ast(n->as.binop.rhs, x, y);
 
             if(!expect_number(lhs_eval)){
                 return NULL;
@@ -111,8 +111,8 @@ Node* eval_ast(Node* n, float x, float y){
         }
 
         case NK_MOD: {
-            Node* lhs_eval = eval_ast(n->as.binop.lhs, x, y);
-            Node* rhs_eval = eval_ast(n->as.binop.rhs, x, y);
+            Node* lhs_eval = ast.array + eval_ast(n->as.binop.lhs, x, y);
+            Node* rhs_eval = ast.array + eval_ast(n->as.binop.rhs, x, y);
 
             if(!expect_number(lhs_eval)){
                 return NULL;
@@ -131,8 +131,8 @@ Node* eval_ast(Node* n, float x, float y){
 
         case NK_DIV: {
 
-            Node* lhs_eval = eval_ast(n->as.binop.lhs, x, y);
-            Node* rhs_eval = eval_ast(n->as.binop.rhs, x, y);
+            Node* lhs_eval = ast.array + eval_ast(n->as.binop.lhs, x, y);
+            Node* rhs_eval = ast.array + eval_ast(n->as.binop.rhs, x, y);
 
             if(!expect_number(lhs_eval)){
                 return NULL;
@@ -151,7 +151,7 @@ Node* eval_ast(Node* n, float x, float y){
         
         case NK_SIN: {
 
-            Node* eval = eval_ast(n->as.unop, x, y);
+            Node* eval = ast.array + eval_ast(n->as.unop, x, y);
 
             if(!expect_number(eval)){
                 return NULL;
@@ -162,7 +162,7 @@ Node* eval_ast(Node* n, float x, float y){
 
         case NK_COS: {
 
-            Node* eval = eval_ast(n->as.unop, x, y);
+            Node* eval = ast.array + eval_ast(n->as.unop, x, y);
 
             if(!expect_number(eval)){
                 return NULL;
@@ -172,7 +172,7 @@ Node* eval_ast(Node* n, float x, float y){
         }        
 
         case NK_EXP: {
-            Node* eval = eval_ast(n->as.unop, x, y);
+            Node* eval = ast.array + eval_ast(n->as.unop, x, y);
 
             if(!expect_number(eval)){
                 return NULL;
@@ -183,16 +183,17 @@ Node* eval_ast(Node* n, float x, float y){
 
         case NK_IF_THEN_ELSE: {
 
-            Node* cond_eval = eval_ast(n->as.triple.first, x, y);
+            size_t cond_eval_index = eval_ast(n->as.triple.first, x, y);
+            Node* cond_eval = expect_number(ast.array + cond_eval_index);
        
             if(!expect_number(cond_eval)){
                 return NULL;
             }
 
             if(cond_eval->as.number){
-                return eval_ast(n->as.triple.second, x, y);
+                return ast.array + eval_ast(n->as.triple.second, x, y);
             } else {
-                return eval_ast(n->as.triple.third, x, y);
+                return ast.array + eval_ast(n->as.triple.third, x, y);
             }
         }
 
