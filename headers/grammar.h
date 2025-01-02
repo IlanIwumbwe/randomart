@@ -382,7 +382,7 @@ void grammar(){
     add_branch_to_rule(R_C, branch_single_rule_node(R_C, NK_SIN, 0.25));
 }
 
-Node* generate_ast(Rule* rule, int depth){
+size_t generate_ast(Rule* rule, int depth){
 
     if(rule == NULL){
         printf("Rule is not defined!\n");
@@ -414,15 +414,15 @@ Node* generate_ast(Rule* rule, int depth){
 
             } else if (current_branch.kind == BK_SINGLE_RULE_NODE){
                 assert(current_branch.node_kind & NK_UNOP);
-                Node* node = generate_ast(current_branch.next_rule.one_rule, depth - 1);
+                size_t node = generate_ast(current_branch.next_rule.one_rule, depth - 1);
 
                 return node_unop(current_branch.node_kind, node);
 
             } else if (current_branch.kind == BK_DOUBLE_RULE) {
                 assert(current_branch.node_kind & NK_BINOP);
 
-                Node* lhs = generate_ast(current_branch.next_rule.two_rules.lhs, depth - 1);
-                Node* rhs = generate_ast(current_branch.next_rule.two_rules.rhs, depth - 1);
+                size_t lhs = generate_ast(current_branch.next_rule.two_rules.lhs, depth - 1);
+                size_t rhs = generate_ast(current_branch.next_rule.two_rules.rhs, depth - 1);
 
                 return node_binop(current_branch.node_kind, lhs, rhs);
 
@@ -439,9 +439,9 @@ Node* generate_ast(Rule* rule, int depth){
                 
             assert(current_branch.kind == BK_TRIPLE_RULE);
             
-            Node* first = generate_ast(current_branch.next_rule.three_rules.first, depth - 1);
-            Node* second = generate_ast(current_branch.next_rule.three_rules.second, depth - 1);
-            Node* third = generate_ast(current_branch.next_rule.three_rules.third, depth - 1);
+            size_t first = generate_ast(current_branch.next_rule.three_rules.first, depth - 1);
+            size_t second = generate_ast(current_branch.next_rule.three_rules.second, depth - 1);
+            size_t third = generate_ast(current_branch.next_rule.three_rules.third, depth - 1);
 
             return node_triple(current_branch.node_kind, first, second, third);
         }

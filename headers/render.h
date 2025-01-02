@@ -25,7 +25,7 @@ int render_image(){
             f_x = ((float)int_x / (float)IMAGE_SIZE) * 2.0 - 1.0;
             f_y = ((float)int_y / (float)IMAGE_SIZE) * 2.0 - 1.0;
 
-            Node* res = eval(f_x, f_y); // sample function built from AST
+            Node* res = ast.array + eval(f_x, f_y); // sample function built from AST
 
             if(res == NULL){
                 printf("[%s] AST is invalid! Cannot evaluate it\n", __FILE__);
@@ -37,9 +37,13 @@ int render_image(){
                 return -1;
             }
 
-            canvas[int_y][int_x].r = (res->as.triple.first->as.number+1)/2.0 * 255;
-            canvas[int_y][int_x].g = (res->as.triple.second->as.number+1)/2.0 * 255;
-            canvas[int_y][int_x].b = (res->as.triple.third->as.number+1)/2.0 * 255;
+            float first = ast.array[res->as.triple.first].as.number;
+            float second = ast.array[res->as.triple.second].as.number;
+            float third = ast.array[res->as.triple.third].as.number;
+
+            canvas[int_y][int_x].r = (first+1)/2.0 * 255;
+            canvas[int_y][int_x].g = (second+1)/2.0 * 255;
+            canvas[int_y][int_x].b = (third+1)/2.0 * 255;
             canvas[int_y][int_x].a = 255;
         }
     }

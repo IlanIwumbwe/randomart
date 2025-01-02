@@ -12,7 +12,7 @@ void init(int seed){
 
     print_grammar();
 
-    init_ast(20);
+    init_ast(1);
 }
 
 void build_ast(int depth){
@@ -35,7 +35,7 @@ void build_ast(int depth){
     */
 
     if((ast.capacity - ast.size) <  2 * (ast.size + 5)){
-        reallocate_ast(2 * (ast.size + 5));
+       reallocate_ast(2 * (ast.size + 5));
     }
 }
 

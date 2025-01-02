@@ -79,5 +79,5 @@ These are some images produces from ASTs that implement these operators:
 ## Todo
 - [ ] Exploration
 
-**Note:** 
-- Nesting depth is currently limited to 10. Higher numbers cause weird issues (segfaults I'm yet to solve, although very rarely), but we don't need massive functions anyway. They may not actually be that useful.
+### Note: 
+- Nesting depth is currently limited to 50. 

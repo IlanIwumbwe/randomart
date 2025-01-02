@@ -105,46 +105,6 @@ void find_ast_root(){
     ast.used = ast.size; // reset used counter to overwrite created nodes during previous evaluation
 }
 
-void reallocate_node_pointers(Node n, Node* old_node_loc, Node* new_node_loc){
-
-    if(old_node_loc != new_node_loc){
-
-        if(n.nk & NK_UNOP){
-            unsigned long arg_offset = old_node_loc - n.as.unop;
-
-            assert(arg_offset > 0);
-
-            new_node_loc->as.unop = new_node_loc - arg_offset;
-        }
-
-        if(n.nk & NK_BINOP){
-            unsigned long lhs_offset = old_node_loc - n.as.binop.lhs;
-            unsigned long rhs_offset = old_node_loc - n.as.binop.rhs;
-
-            assert(lhs_offset > 0);
-            assert(rhs_offset > 0);
-
-            new_node_loc->as.binop.lhs = new_node_loc - lhs_offset;
-            new_node_loc->as.binop.rhs = new_node_loc - rhs_offset;
-        }
-
-        if(n.nk & NK_TRIPLE){
-            unsigned long first_offset = old_node_loc - n.as.triple.first;
-            unsigned long second_offset = old_node_loc - n.as.triple.second;
-            unsigned long third_offset = old_node_loc - n.as.triple.third;
-
-            assert(first_offset > 0);
-            assert(second_offset > 0);
-            assert(third_offset > 0);
-
-            new_node_loc->as.triple.first = new_node_loc - first_offset;
-            new_node_loc->as.triple.second = new_node_loc - second_offset;
-            new_node_loc->as.triple.third = new_node_loc - third_offset;
-        }
-
-    }
-}
-
 void free_grammar();
 
 /// @brief Move ast node array to a new mem location
@@ -174,7 +134,9 @@ size_t add_node_to_ast(Node node){
     
     assert(ast.used != 0);
 
-    return ast.used;  // return pointer to node that just got added
+    ast.array_head = ast.used - 1;
+
+    return ast.used - 1;  // return pointer to node that just got added
 }
 
 size_t node_number_loc(float n, int line, char* file){
