@@ -376,10 +376,10 @@ void grammar(){
     add_branch_to_rule(R_A, branch_no_rule(NK_X, 1.0/3.0));
     add_branch_to_rule(R_A, branch_no_rule(NK_Y, 1.0/3.0));
 
-    add_branch_to_rule(R_C, branch_single_rule(R_A, 0.25));
-    add_branch_to_rule(R_C, branch_double_rule(R_C, R_C, NK_ADD, 0.25));
-    add_branch_to_rule(R_C, branch_double_rule(R_C, R_C, NK_MULT, 0.25));
-    add_branch_to_rule(R_C, branch_single_rule_node(R_C, NK_SIN, 0.25));
+    add_branch_to_rule(R_C, branch_single_rule(R_A, 0.1));
+    add_branch_to_rule(R_C, branch_double_rule(R_C, R_C, NK_ADD, 0.3));
+    add_branch_to_rule(R_C, branch_double_rule(R_C, R_C, NK_DIV, 0.3));
+    add_branch_to_rule(R_C, branch_single_rule_node(R_C, NK_COS, 0.3));
 }
 
 size_t generate_ast(Rule* rule, int depth){
