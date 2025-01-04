@@ -107,7 +107,9 @@ void init_branches(Rule_kind rk, char* name, size_t capacity){
 /// @param rule 
 void free_branch_memory(Rule* rule){
     free(rule->branch);
+    #ifdef DEBUG
     printf("Freed branch memory used by %s\n", rule->name);
+    #endif
 }
 
 /// @brief For each rule, free memory used to store each branch, then free memory used to store the rule. This may free NULL pointer if you define a grammar that doesn't use all slots 
@@ -118,7 +120,9 @@ void free_grammar(){
     }
 
     free(g.rule);
+    #ifdef DEBUG
     printf("Freed memory used by the grammar\n");
+    #endif
 }
 
 void add_branch_to_rule(Rule_kind rk, Branch b){
@@ -130,7 +134,7 @@ void add_branch_to_rule(Rule_kind rk, Branch b){
         Branch* nb = (Branch*)realloc(r->branch, sizeof(Branch) * r->capacity);
         
         if(nb == NULL){
-            printf("[ERROR] Memory reallocation of failed!\n");
+            printf("[ERROR] Memory reallocation of branch failed!\n");
             exit(-1);
         }
 
@@ -313,11 +317,10 @@ void print_branch(Branch* b){
             case NK_IF_THEN_ELSE:
                 printf("if(");
                 printf("%s", b->next_rule.three_rules.first->name);
-                printf(") then {");
+                printf(") then ");
                 printf("%s", b->next_rule.three_rules.second->name);
-                printf("} else {");
+                printf(" else ");
                 printf("%s", b->next_rule.three_rules.third->name);
-                printf("}");
                 break;
             
             case NK_NUMBER:
@@ -370,7 +373,7 @@ void grammar(){
 
     assert(g.entry_point != NULL); // entry point must be defined
 
-    add_branch_to_rule(R_E, branch_triple_rule(R_C, R_C, R_C, NK_E, 1.0));
+    add_branch_to_rule(R_E, branch_triple_rule(R_C, R_C, R_C, NK_E, 1));
 
     add_branch_to_rule(R_A, branch_no_rule(NK_NUMBER, 1.0/3.0));
     add_branch_to_rule(R_A, branch_no_rule(NK_X, 1.0/3.0));
@@ -450,6 +453,7 @@ size_t generate_ast(Rule* rule, int depth){
             printf("This rule does not exist!\n");
             exit(-1);
     }
+
 
 }
 

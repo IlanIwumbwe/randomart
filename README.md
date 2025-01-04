@@ -79,5 +79,43 @@ These are some images produces from ASTs that implement these operators:
 ## Todo
 - [ ] Exploration
 
+## Running
+`./randomart` will start the program, prompting you for an input. Using a series of commands controls what it does. 
+
+By default, the program rendersn image from a randomly generated AST at depth 1. Typing enter runs with this default configuration:
+
+```
+$ ./randomart 
+GRAMMAR: 
+E ::= (C,C,C) [1.000000]
+A ::= random number [-1 1] [0.333333] | x [0.333333] | y [0.333333]
+C ::= A [0.100000] | add(C, C) [0.300000] | div(C, C) [0.300000] | sin(C) [0.300000]
+
+> 
+E(x,x,x)
+nodes in AST: 4
+
+Rendering image.....
+
+> 
+```
+
+You can also type in a function which will be parsed and interpreted:
+```
+$ ./randomart 
+GRAMMAR: 
+E ::= (C,C,C) [1.000000]
+A ::= random number [-1 1] [0.333333] | x [0.333333] | y [0.333333]
+C ::= A [0.100000] | add(C, C) [0.300000] | div(C, C) [0.300000] | sin(C) [0.300000]
+
+> E(sin(0.3), add(x,y), y)
+Rendering image.....
+
+> 
+```
+- `depth n` sets the depth
+- `seed n` sets the seed
+- `quit` quits the program
+
 ### Note: 
 - Nesting depth is currently limited to 50. 

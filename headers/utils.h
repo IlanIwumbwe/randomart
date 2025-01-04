@@ -4,9 +4,12 @@
 #include <math.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 #define U64 __uint64_t
 #define MAX_DEPTH 50
+#define INPUT_SIZE 20000
 
 typedef enum{
     RM_RENDER,
@@ -25,44 +28,18 @@ float clamp(float x, float min, float max){
     if(x > max){return max;} else {return x;}
 }  
 
-void usage(){
-    printf("Usage: ./randomart [-d] _ [-s] _ [-t(test))/-p(print)]\n");
-    printf("Using default options:\n- current time seed\n- depth = 1\n-image render\n");
-}
+static int get_input(char* buffer){
+    printf("> ");
+    memset(buffer, 0, INPUT_SIZE);
+    fflush(stdout);
 
-int set_depth(char* argv[], int flag_pos, int* depth){
-    char* end;
-
-    if(!strcmp(argv[flag_pos], "-d")){
-        *depth = strtol(argv[flag_pos+1], &end, 10);
-        return 0;
-    } else {
+    if(fgets(buffer, INPUT_SIZE, stdin) == NULL){
         return -1;
     }
-}
 
-int set_seed(char* argv[], int flag_pos, U64* seed){
-    char* end;
+    buffer[strcspn(buffer, "\r\n")] = '\0';
 
-    if(!strcmp(argv[flag_pos], "-s")){
-        *seed = strtoll(argv[flag_pos+1], &end, 10);
-        return 0;
-    } else {
-        return -1;
-    }
-}
-
-int set_mode(char* argv[], int flag_pos, Run_mode* mode){
-
-    if(!strcmp(argv[flag_pos], "-t")){
-        *mode = RM_TEST;
-        return 0;
-    } else if (!strcmp(argv[flag_pos], "-p")){
-        *mode = RM_PRINT;
-        return 0;
-    } else {
-        return -1;
-    }
+    return 0;
 }
 
 #endif
