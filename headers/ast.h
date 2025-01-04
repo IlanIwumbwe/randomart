@@ -93,7 +93,13 @@ void init_ast(size_t capacity){
 
 void free_ast(){
     free(ast.array);
+    #ifdef DEBUG
     printf("Freed ast memory\n");
+    #endif
+}
+
+void reset_ast(){
+    ast.used = 0;
 }
 
 /// @brief Reset `array_head` and `used` pointers to point to the root of the AST that was generated. This is required to prepare new evaluation       
@@ -322,7 +328,7 @@ void print_ast(size_t node_index){
     }
 }
 
-#define print_ast_ln(node) (print_ast(node), printf("\n"))
+#define print_ast_ln(node) (print_ast(node), printf("\n"), printf("nodes in AST: %ld\n\n", ast.used))
 
 void greyscale(){
     node_triple(NK_E, node_x, node_x, node_x);
@@ -355,6 +361,20 @@ void incorrect_ast(){
             node_y, 
             node_x)
     );
+}
+
+/*
+    In the worst case scenario, we need to create as many nodes as there are in the AST in order to evaluate it. This happens if there's no number nodes
+    in the AST. This means that if we want no reallocations to happen during evaluation i.e we never run our of space in the dynamic array, we need to make 
+    sure that the AST is stored with a capacity that's at least twice as big as the AST size. 
+
+    5 added just to be extra extra safe
+*/
+void reallocate_ast_after_build(){
+
+    if((ast.capacity - ast.size) <  2 * (ast.size + 5)){
+       reallocate_ast(2 * (ast.size + 5));
+    }
 }
 
 #endif
