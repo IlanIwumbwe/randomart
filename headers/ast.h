@@ -23,14 +23,14 @@ typedef enum {
     NK_MULT = set_bit(7),
     NK_MOD = set_bit(8),
     NK_DIV = set_bit(9),
-    NK_GTEQ = set_bit(10),
+    NK_GEQ = set_bit(10),
 
     NK_E = set_bit(11),
     NK_IF_THEN_ELSE = set_bit(12)
 } Node_kind;
 
 #define NK_UNOP (NK_SIN | NK_COS | NK_EXP)
-#define NK_BINOP (NK_ADD | NK_MULT | NK_MOD | NK_DIV | NK_GTEQ)
+#define NK_BINOP (NK_ADD | NK_MULT | NK_MOD | NK_DIV | NK_GEQ)
 #define NK_TRIPLE (NK_E | NK_IF_THEN_ELSE)
 
 typedef struct s_Node Node;
@@ -263,7 +263,7 @@ void print_ast(size_t node_index){
             printf(")");
             break;
 
-        case NK_GTEQ:
+        case NK_GEQ:
             printf("geq(");
             print_ast(n->as.binop.lhs);
             printf(", ");
@@ -336,7 +336,7 @@ void greyscale(){
 
 void branch_func(){
     node_triple(NK_IF_THEN_ELSE,
-        node_binop(NK_GTEQ, node_binop(NK_MULT, node_x, node_y), node_number(0)),
+        node_binop(NK_GEQ, node_binop(NK_MULT, node_x, node_y), node_number(0)),
         node_triple(NK_E, node_x, node_y, node_number(1)),
         node_triple(NK_E,
             node_binop(NK_MOD,

@@ -18,6 +18,8 @@ const char* PATTERNS[] = {
     "cos",
     "exp",
     "mod",
+    "mult",
+    "geq",
     "x",
     "y",
     "E",
@@ -76,6 +78,7 @@ size_t lex(char* input){
 
         if(!matched){
             printf("Could not match any of the known patterns at char %c \n", *cursor);
+            curr_token = 0;
             break;
         }
 

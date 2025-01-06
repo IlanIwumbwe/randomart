@@ -16,7 +16,7 @@ void init(){
 
 void run(){
     U64 seed; 
-    int depth;
+    int depth = 0;
     int seed_set = 0;
     Run_mode mode;
 

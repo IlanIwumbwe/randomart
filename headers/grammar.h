@@ -147,6 +147,8 @@ void add_branch_to_rule(Rule_kind rk, Branch b){
 }
 
 Branch branch_single_rule_node(Rule_kind rk, Node_kind nk, float prob){
+    assert(nk & NK_UNOP);
+
     Rule* rule = g.rule + rk;
 
     Branch b = {
@@ -172,6 +174,8 @@ Branch branch_single_rule(Rule_kind rk, float prob){
 }
 
 Branch branch_double_rule(Rule_kind lhs_rk, Rule_kind rhs_rk, Node_kind nk, float prob){
+    assert(nk & NK_BINOP);
+
     Rule* lhs = g.rule + lhs_rk;
     Rule* rhs = g.rule + rhs_rk;
 
@@ -186,6 +190,8 @@ Branch branch_double_rule(Rule_kind lhs_rk, Rule_kind rhs_rk, Node_kind nk, floa
 }
 
 Branch branch_triple_rule(Rule_kind first_rk, Rule_kind second_rk, Rule_kind third_rk, Node_kind nk, float prob){
+    assert(nk & NK_TRIPLE);
+
     Rule* first = g.rule + first_rk;
     Rule* second = g.rule + second_rk;
     Rule* third = g.rule + third_rk;
@@ -235,7 +241,7 @@ Branch set_current_branch(Rule* rule, int depth){
 void print_branch(Branch* b){
     assert(b != NULL);
 
-    if(b->kind == BK_SINGLE_RULE){
+    if(b->kind == BK_SINGLE_RULE){  
         printf("%s", b->next_rule.one_rule->name);
     } else {
     
@@ -272,7 +278,7 @@ void print_branch(Branch* b){
                 printf(")");
                 break;
 
-            case NK_GTEQ:
+            case NK_GEQ:
                 printf("geq(");
                 printf("%s", b->next_rule.two_rules.lhs->name);
                 printf(", ");
@@ -380,9 +386,8 @@ void grammar(){
     add_branch_to_rule(R_A, branch_no_rule(NK_Y, 1.0/3.0));
 
     add_branch_to_rule(R_C, branch_single_rule(R_A, 0.1));
-    add_branch_to_rule(R_C, branch_double_rule(R_C, R_C, NK_ADD, 0.3));
-    add_branch_to_rule(R_C, branch_double_rule(R_C, R_C, NK_DIV, 0.3));
-    add_branch_to_rule(R_C, branch_single_rule_node(R_C, NK_COS, 0.3));
+    add_branch_to_rule(R_C, branch_double_rule(R_C, R_C, NK_ADD, 0.45));
+    add_branch_to_rule(R_C, branch_single_rule_node(R_C, NK_COS, 0.45));
 }
 
 size_t generate_ast(Rule* rule, int depth){

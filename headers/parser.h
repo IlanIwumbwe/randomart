@@ -10,7 +10,7 @@ int cursor;
 int NUM_OF_TOKENS;
 
 void consume(){
-    if((cursor < NUM_OF_TOKENS - 1) || (cursor == NUM_OF_TOKENS - 1)){
+    if(cursor < NUM_OF_TOKENS - 1){
         cursor++;
     } else {
         printf("Cannot consume any more tokens! Cursor at %d / %d\n", cursor, NUM_OF_TOKENS);
@@ -24,7 +24,14 @@ int token_matches(char* curr_token, char* expected){
 
 void expect_syntax(char* curr_token, char* expected){
     if(token_matches(curr_token, expected)){
-        consume();
+        if(cursor == NUM_OF_TOKENS - 1){
+            #ifdef DEBUG
+            printf("%s must be the last token\n", curr_token);
+            #endif
+        } else {
+            consume();
+        }
+        
     } else {
         printf("Expected %s but got %s \n", expected, curr_token);
         exit(-1);
@@ -110,6 +117,12 @@ size_t parse_C(){
 
     } else if (token_matches(tokens[cursor], "mod")){
         return parse_binop(NK_MOD);
+
+    } else if (token_matches(tokens[cursor], "mult")){
+        return parse_binop(NK_MULT);
+
+    } else if (token_matches(tokens[cursor], "geq")){
+        return parse_binop(NK_GEQ);
 
     } else {
         return parse_A();

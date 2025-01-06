@@ -75,7 +75,7 @@ size_t eval_ast(size_t index, float x, float y){
             );
         }
 
-        case NK_GTEQ: {
+        case NK_GEQ: {
             Node* lhs_eval = ast.array + eval_ast(n->as.binop.lhs, x, y);
             Node* rhs_eval = ast.array + eval_ast(n->as.binop.rhs, x, y);
 
