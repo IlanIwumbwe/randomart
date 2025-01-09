@@ -47,25 +47,26 @@ There's code to interpret these additional constructs, so it is possible to writ
 ```C
 void grammar(){
 
-    init_rules(N_RULES);
+    init_grammar(N_RULES);
 
-    init_branches(R_E, MAX_BRANCHES); // allocate memory for branches
-    init_branches(R_A, MAX_BRANCHES); // allocate memory for branches
-    init_branches(R_C, MAX_BRANCHES); // allocate memory for branches
+    add_rule_to_grammar("E", RK_ENTRY);
+    add_rule_to_grammar("A", RK_TERMINAL);
+    add_normal_rule_to_grammar("C");
 
-    g.entry_point = g.rule + R_E;
+    init_branches(MAX_BRANCHES);
 
     assert(g.entry_point != NULL); // entry point must be defined
+    assert(g.terminal_rule != NULL); // terminal rule must be defined
 
-    add_branch_to_rule(R_E, branch_triple_rule(R_C, R_C, R_C, NK_E, 1.0));
+    add_branch_to_rule("E", branch_triple_rule("C", "C", "C", NK_E, 1));
 
-    add_branch_to_rule(R_A, branch_no_rule(NK_NUMBER, 1.0/3.0));
-    add_branch_to_rule(R_A, branch_no_rule(NK_X, 1.0/3.0));
-    add_branch_to_rule(R_A, branch_no_rule(NK_Y, 1.0/3.0));
+    add_branch_to_rule("A", branch_no_rule(NK_NUMBER, 1.0/3.0));
+    add_branch_to_rule("A", branch_no_rule(NK_X, 1.0/3.0));
+    add_branch_to_rule("A", branch_no_rule(NK_Y, 1.0/3.0));
 
-    add_branch_to_rule(R_C, branch_single_rule(R_A, 1.0/3.0));
-    add_branch_to_rule(R_C, branch_double_rule(R_C, R_C, NK_ADD, 3.0/8.0));
-    add_branch_to_rule(R_C, branch_double_rule(R_C, R_C, NK_MULT, 3.0/8.0));
+    add_branch_to_rule("C", branch_single_rule("A", 0.1));
+    add_branch_to_rule("C", branch_double_rule("C", "C", NK_ADD, 0.45));
+    add_branch_to_rule("C", branch_single_rule_node("C", NK_COS, 0.45));
 }
 ```
 
@@ -75,9 +76,6 @@ These are some images produces from ASTs that implement these operators:
 |--------|--------|-------|
 | ![c2](images/c2.png) | ![c5](images/c5.png) | ![c41](images/c41.png) |
 | `E(y,add(x, x) >= div(y, y),y)` | Function too big to show here | Function too big to show here |
-
-## Todo
-- [ ] Exploration
 
 ## Running
 `./randomart` will start the program, prompting you for an input. Using a series of commands controls what it does. 
@@ -117,5 +115,10 @@ Rendering image.....
 - `seed n` sets the seed
 - `quit` quits the program
 
-### Note: 
+## Note: 
 - Nesting depth is currently limited to 50. 
+
+## Todo
+- [ ] Make it such that when a rule is defined to be terminal, it is actually written as a terminal rule. Currently, it's easy to claim the rule is terminal, but make it non-terminal.
+- [ ] Write grammar parser to make it easier to define any grammar in a text file 
+- [ ] Exploration

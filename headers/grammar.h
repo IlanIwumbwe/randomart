@@ -13,7 +13,9 @@ typedef enum{
 } Branch_kind;
 
 typedef enum {
-    R_E, R_A, R_C
+    RK_NORMAL = set_bit(0),
+    RK_TERMINAL = set_bit(1),
+    RK_ENTRY = set_bit(2),
 } Rule_kind;
 
 typedef struct sRule Rule;
@@ -44,8 +46,9 @@ typedef struct {
 } Branch;
 
 struct sRule {
-    Rule_kind kind;
     char* name;
+    Rule_kind rk;
+
     Branch* branch;
 
     size_t used;
@@ -54,10 +57,11 @@ struct sRule {
 
 typedef struct {
     Rule* rule;
-
-    Rule* entry_point;
     size_t used;
     size_t capacity;
+
+    Rule* entry_point;
+    Rule* terminal_rule;
 } Grammar;
 
 Grammar g = {0};
@@ -67,7 +71,7 @@ const size_t MAX_BRANCHES = 10;
 
 /// @brief Allocate memory for all rules that should be added to the grammar
 /// @param g 
-void init_rules(size_t capacity){
+void init_grammar(size_t capacity){
     g.rule = (Rule*) malloc(sizeof(Rule) * capacity);
 
     if(g.rule == NULL){
@@ -79,28 +83,25 @@ void init_rules(size_t capacity){
     g.used = 0;
 }
 
-void init_branches(Rule_kind rk, char* name, size_t capacity){
+/// @brief Init memory used by branches of each rule
+/// @param rule 
+/// @param capacity 
+void init_branches(size_t capacity){
+    Rule* rule;
 
-    if(g.used == N_RULES){
-        printf("Define new rule and add memory for it\n");
-        exit(-1);
+    for(size_t i = 0; i < g.used; ++i){
+        rule = g.rule + i;
+
+        rule->branch = (Branch*) malloc(sizeof(Branch) * capacity);
+
+        if(rule->branch == NULL){
+            printf("[ERROR] Memory allocation of %ld elements failed!\n", capacity);
+            exit(-1);
+        }
+
+        rule->capacity = capacity;
+        rule->used = 0;
     }
-
-    Rule* rule = g.rule + rk;
-
-    rule->branch = (Branch*) malloc(sizeof(Branch) * capacity);
-    rule->kind = rk;
-    rule->name = name;
-
-    if(rule->branch == NULL){
-        printf("[ERROR] Memory allocation of %ld elements failed!\n", capacity);
-        exit(-1);
-    }
-
-    rule->capacity = capacity;
-    rule->used = 0;
-
-    g.used ++;
 }
 
 /// @brief Free memory used for branches by this rule
@@ -125,8 +126,62 @@ void free_grammar(){
     #endif
 }
 
-void add_branch_to_rule(Rule_kind rk, Branch b){
-    Rule* r = g.rule + rk;
+/// @brief Allocate memory for rule with name `rule_name` into the gramar
+/// @param rule_name 
+/// @param num_of_branches 
+void add_rule_to_grammar(char* rule_name, Rule_kind rk_flag){
+
+    if(g.used == g.capacity){
+        g.capacity = 2 * g.capacity;
+
+        Rule* nr = (Rule*)realloc(g.rule, sizeof(Rule) * g.capacity);
+        
+        if(nr == NULL){
+            printf("[ERROR] Memory reallocation of branch failed!\n");
+            exit(-1);
+        }
+
+        g.rule = nr; 
+    }
+
+    g.rule[g.used++] = (Rule){.name = rule_name, .rk = rk_flag};
+
+    if(rk_flag & RK_ENTRY){
+        g.entry_point = g.rule + g.used - 1;
+    }
+
+    if(rk_flag & RK_TERMINAL){
+        g.terminal_rule = g.rule + g.used - 1;
+    }
+}
+
+Rule* find_rule_location(char* rule_name){
+    char* name;
+
+    for(size_t i = 0; i < g.used; ++i){
+        name = g.rule[i].name;
+
+        if(!strcmp(name, rule_name)){
+            return g.rule + i;
+        }
+    }
+
+    return NULL;
+}
+
+Rule* expect_rule(char* rule_name){
+    Rule* r = find_rule_location(rule_name);
+
+    if(r == NULL){
+        printf("Rule %s was not added to the grammar! Define it first \n", rule_name);
+        exit(-1);
+    }
+
+    return r;
+}
+
+void add_branch_to_rule(char* rule_name, Branch b){
+    Rule* r = expect_rule(rule_name);
 
     if(r->used >= r->capacity){
         r->capacity = 2 * r->capacity;
@@ -146,10 +201,10 @@ void add_branch_to_rule(Rule_kind rk, Branch b){
     assert(r->used != 0);
 }
 
-Branch branch_single_rule_node(Rule_kind rk, Node_kind nk, float prob){
+Branch branch_single_rule_node(char* rule_name, Node_kind nk, float prob){
     assert(nk & NK_UNOP);
 
-    Rule* rule = g.rule + rk;
+    Rule* rule = expect_rule(rule_name);
 
     Branch b = {
         .kind = BK_SINGLE_RULE_NODE,
@@ -161,8 +216,8 @@ Branch branch_single_rule_node(Rule_kind rk, Node_kind nk, float prob){
     return b;
 }
 
-Branch branch_single_rule(Rule_kind rk, float prob){
-    Rule* rule = g.rule + rk;
+Branch branch_single_rule(char* rule_name, float prob){
+    Rule* rule = expect_rule(rule_name);
 
     Branch b = {
         .kind = BK_SINGLE_RULE,
@@ -173,11 +228,11 @@ Branch branch_single_rule(Rule_kind rk, float prob){
     return b;
 }
 
-Branch branch_double_rule(Rule_kind lhs_rk, Rule_kind rhs_rk, Node_kind nk, float prob){
+Branch branch_double_rule(char* lhs_rule_name, char* rhs_rule_name, Node_kind nk, float prob){
     assert(nk & NK_BINOP);
 
-    Rule* lhs = g.rule + lhs_rk;
-    Rule* rhs = g.rule + rhs_rk;
+    Rule* lhs = expect_rule(lhs_rule_name);
+    Rule* rhs = expect_rule(rhs_rule_name);
 
     Branch b = {
         .kind = BK_DOUBLE_RULE,
@@ -189,12 +244,12 @@ Branch branch_double_rule(Rule_kind lhs_rk, Rule_kind rhs_rk, Node_kind nk, floa
     return b;
 }
 
-Branch branch_triple_rule(Rule_kind first_rk, Rule_kind second_rk, Rule_kind third_rk, Node_kind nk, float prob){
+Branch branch_triple_rule(char* first_rule_name, char* second_rule_name, char* third_rule_name, Node_kind nk, float prob){
     assert(nk & NK_TRIPLE);
 
-    Rule* first = g.rule + first_rk;
-    Rule* second = g.rule + second_rk;
-    Rule* third = g.rule + third_rk;
+    Rule* first = expect_rule(first_rule_name);
+    Rule* second = expect_rule(second_rule_name);
+    Rule* third = expect_rule(third_rule_name);
 
     Branch b = {
         .kind = BK_TRIPLE_RULE,
@@ -215,27 +270,6 @@ Branch branch_no_rule(Node_kind nk, float prob){
     };
 
     return b;
-}
-
-Branch set_current_branch(Rule* rule, int depth){
-
-    Branch current_branch = rule->branch[0];
-
-    if((depth < 0) && (rule->kind != R_A)){   // A is a terminal rule, we have no need to force it to a particular branch
-        return current_branch;
-    }
-
-    float branch_prob = randrange(0, 1); 
-    float cummulative_prob = current_branch.prob;
-
-    for(size_t i = 1; i < rule->used; ++i){
-        if(branch_prob <= cummulative_prob){break;} // replace with cummulative prob here to choose nodes by paper probabilities
-        
-        current_branch = rule->branch[i];
-        cummulative_prob += current_branch.prob;
-    }
-
-    return current_branch;
 }
 
 void print_branch(Branch* b){
@@ -342,8 +376,6 @@ void print_branch(Branch* b){
 }
 
 void print_branches(Rule rule){
-
-    printf("%s ::= ", rule.name);
     
     for(size_t i = 0; i < rule.used; ++i){
         
@@ -359,6 +391,7 @@ void print_grammar(){
     printf("GRAMMAR: \n");
     for(size_t i = 0; i < g.capacity; ++i){
         if(g.rule[i].name){
+            printf("%s ::= ", g.rule[i].name);
             print_branches(g.rule[i]);
             printf("\n");
         }
@@ -367,99 +400,111 @@ void print_grammar(){
     printf("\n");
 }
 
-void grammar(){
 
-    init_rules(N_RULES);
+Branch* get_current_branch(Rule* rule, int depth){
 
-    init_branches(R_E, "E", MAX_BRANCHES); // allocate memory for branches
-    init_branches(R_A, "A", MAX_BRANCHES); // allocate memory for branches
-    init_branches(R_C, "C", MAX_BRANCHES); // allocate memory for branches
+    if((depth >= 0) || (rule->rk & RK_TERMINAL)){
 
-    g.entry_point = g.rule + R_E;
+        Branch* current_branch = rule->branch;
 
-    assert(g.entry_point != NULL); // entry point must be defined
+        float branch_prob = randrange(0, 1); 
+        float cummulative_prob = current_branch->prob;
 
-    add_branch_to_rule(R_E, branch_triple_rule(R_C, R_C, R_C, NK_E, 1));
+        for(size_t i = 1; i < rule->used; ++i){
+            if(branch_prob <= cummulative_prob){ break; }
+            
+            current_branch = rule->branch + i;
+            cummulative_prob += current_branch->prob;
+        }
 
-    add_branch_to_rule(R_A, branch_no_rule(NK_NUMBER, 1.0/3.0));
-    add_branch_to_rule(R_A, branch_no_rule(NK_X, 1.0/3.0));
-    add_branch_to_rule(R_A, branch_no_rule(NK_Y, 1.0/3.0));
+        return current_branch;
 
-    add_branch_to_rule(R_C, branch_single_rule(R_A, 0.1));
-    add_branch_to_rule(R_C, branch_double_rule(R_C, R_C, NK_ADD, 0.45));
-    add_branch_to_rule(R_C, branch_single_rule_node(R_C, NK_COS, 0.45));
+    } else {
+        return get_current_branch(g.terminal_rule, 0);
+    }
 }
 
+/// @brief Given an entry point, generate AST based on grammar
+/// @param rule 
+/// @param depth 
+/// @return 
 size_t generate_ast(Rule* rule, int depth){
 
-    if(rule == NULL){
-        printf("Rule is not defined!\n");
-        exit(-1);
-    }
+    Branch* b = get_current_branch(rule, depth);
 
-    switch(rule->kind){
-        case R_A: {
-            Branch current_branch = set_current_branch(rule, depth);
+    switch (b->kind){
+        case BK_NO_RULE:
 
-            if(current_branch.node_kind == NK_NUMBER){
+            if(b->node_kind == NK_NUMBER){
                 return node_number(randrange(-1, 1));
-            } else if (current_branch.node_kind == NK_X){
+            } else if (b->node_kind == NK_X){
                 return node_x;
-            } else if(current_branch.node_kind == NK_Y) {
+            } else if(b->node_kind == NK_Y) {
                 return node_y;
             } else {
                 printf("Rule A should only produce terminal nodes (number, x, y)!\n");
                 exit(-1);
             }
+
+        case BK_SINGLE_RULE_NODE: {
+            assert(b->node_kind & NK_UNOP);
+
+            size_t node = generate_ast(b->next_rule.one_rule, depth - 1);
+
+            return node_unop(b->node_kind, node);
         }
 
-        case R_C: {
+        case BK_SINGLE_RULE :
+            return generate_ast(b->next_rule.one_rule, depth - 1);
 
-            Branch current_branch = set_current_branch(rule, depth);
+        case BK_DOUBLE_RULE:
+            assert(b->node_kind & NK_BINOP);
 
-            if(current_branch.kind == BK_SINGLE_RULE){
-                return generate_ast(current_branch.next_rule.one_rule, depth - 1);
+            size_t lhs = generate_ast(b->next_rule.two_rules.lhs, depth - 1);
+            size_t rhs = generate_ast(b->next_rule.two_rules.rhs, depth - 1);
 
-            } else if (current_branch.kind == BK_SINGLE_RULE_NODE){
-                assert(current_branch.node_kind & NK_UNOP);
-                size_t node = generate_ast(current_branch.next_rule.one_rule, depth - 1);
+            return node_binop(b->node_kind, lhs, rhs);
 
-                return node_unop(current_branch.node_kind, node);
-
-            } else if (current_branch.kind == BK_DOUBLE_RULE) {
-                assert(current_branch.node_kind & NK_BINOP);
-
-                size_t lhs = generate_ast(current_branch.next_rule.two_rules.lhs, depth - 1);
-                size_t rhs = generate_ast(current_branch.next_rule.two_rules.rhs, depth - 1);
-
-                return node_binop(current_branch.node_kind, lhs, rhs);
-
-            } else {
-                printf("Rule C should produce rule A, binary ops and unary ops!\n");
-                exit(-1);
-            }
-        
-        }
-
-        case R_E: {
-
-            Branch current_branch = set_current_branch(rule, depth);
-                
-            assert(current_branch.kind == BK_TRIPLE_RULE);
+        case BK_TRIPLE_RULE:
+            assert(b->node_kind & NK_TRIPLE);
             
-            size_t first = generate_ast(current_branch.next_rule.three_rules.first, depth - 1);
-            size_t second = generate_ast(current_branch.next_rule.three_rules.second, depth - 1);
-            size_t third = generate_ast(current_branch.next_rule.three_rules.third, depth - 1);
+            size_t first = generate_ast(b->next_rule.three_rules.first, depth - 1);
+            size_t second = generate_ast(b->next_rule.three_rules.second, depth - 1);
+            size_t third = generate_ast(b->next_rule.three_rules.third, depth - 1);
 
-            return node_triple(current_branch.node_kind, first, second, third);
-        }
+            return node_triple(b->node_kind, first, second, third);
 
         default:
             printf("This rule does not exist!\n");
             exit(-1);
+
     }
+}
 
+#define add_normal_rule_to_grammar(name) add_rule_to_grammar(name, RK_NORMAL) // most rules won't be terminal or entry points so there's a macro for normal
 
+void grammar(){
+
+    init_grammar(N_RULES);
+
+    add_rule_to_grammar("E", RK_ENTRY);
+    add_rule_to_grammar("A", RK_TERMINAL);
+    add_normal_rule_to_grammar("C");
+
+    init_branches(MAX_BRANCHES);
+
+    assert(g.entry_point != NULL); // entry point must be defined
+    assert(g.terminal_rule != NULL); // terminal rule must be defined
+
+    add_branch_to_rule("E", branch_triple_rule("C", "C", "C", NK_E, 1));
+
+    add_branch_to_rule("A", branch_no_rule(NK_NUMBER, 1.0/3.0));
+    add_branch_to_rule("A", branch_no_rule(NK_X, 1.0/3.0));
+    add_branch_to_rule("A", branch_no_rule(NK_Y, 1.0/3.0));
+
+    add_branch_to_rule("C", branch_single_rule("A", 0.1));
+    add_branch_to_rule("C", branch_double_rule("C", "C", NK_ADD, 0.45));
+    add_branch_to_rule("C", branch_single_rule_node("C", NK_COS, 0.45));
 }
 
 #endif
