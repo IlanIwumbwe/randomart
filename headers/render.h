@@ -6,7 +6,7 @@
 #include <math.h>
 #include "interpreter.h"
 
-#define IMAGE_SIZE 1024
+#define IMAGE_SIZE 512
 
 typedef struct {
     char r;
