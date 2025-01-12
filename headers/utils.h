@@ -17,6 +17,46 @@ typedef enum{
     RM_PRINT
 } Run_mode;
 
+typedef struct {
+    size_t value;
+    int none;
+} Option;
+
+Option wrap_value(size_t value, int none){
+    Option wrapper = {.none = none};
+
+    if(!none){
+        wrapper.value = value;
+    }
+
+    return wrapper;
+}
+
+#define NUMBER "[[:digit:]]+" 
+#define FLOAT "(-)?" NUMBER "(." NUMBER ")?" "|" "." NUMBER
+#define OPEN_BRACKET "\\("
+#define CLOSE_BRACKET "\\)"
+
+const char* AST_PATTERNS[] = {
+    "add",
+    "div",
+    "sin",
+    "cos",
+    "exp",
+    "mod",
+    "mult",
+    "geq",
+    "x",
+    "y",
+    "E",
+    ",",
+    "if",
+    "else",
+    OPEN_BRACKET,
+    CLOSE_BRACKET,
+    FLOAT,
+};
+
 float randrange(float min, float max){
     assert(max > min);
     

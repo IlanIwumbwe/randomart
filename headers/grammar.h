@@ -129,7 +129,7 @@ void free_grammar(){
 /// @brief Allocate memory for rule with name `rule_name` into the gramar
 /// @param rule_name 
 /// @param num_of_branches 
-void add_rule_to_grammar(char* rule_name, Rule_kind rk_flag){
+void _add_rule_to_grammar(char* rule_name, Rule_kind rk_flag){
 
     if(g.used == g.capacity){
         g.capacity = 2 * g.capacity;
@@ -481,15 +481,15 @@ size_t generate_ast(Rule* rule, int depth){
     }
 }
 
-#define add_normal_rule_to_grammar(name) add_rule_to_grammar(name, RK_NORMAL) // most rules won't be terminal or entry points so there's a macro for normal
+#define add_rule_to_grammar(name) _add_rule_to_grammar(name, RK_NORMAL) // most rules won't be terminal or entry points so there's a macro for normal
 
 void grammar(){
 
     init_grammar(N_RULES);
 
-    add_rule_to_grammar("E", RK_ENTRY);
-    add_rule_to_grammar("A", RK_TERMINAL);
-    add_normal_rule_to_grammar("C");
+    _add_rule_to_grammar("E", RK_ENTRY);
+    _add_rule_to_grammar("A", RK_TERMINAL);
+    add_rule_to_grammar("C");
 
     init_branches(MAX_BRANCHES);
 
@@ -504,7 +504,7 @@ void grammar(){
 
     add_branch_to_rule("C", branch_single_rule("A", 0.1));
     add_branch_to_rule("C", branch_double_rule("C", "C", NK_ADD, 0.45));
-    add_branch_to_rule("C", branch_single_rule_node("C", NK_COS, 0.45));
+    add_branch_to_rule("C", branch_double_rule("C", "C", NK_MULT, 0.45));
 }
 
 #endif

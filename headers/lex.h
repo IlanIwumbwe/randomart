@@ -6,37 +6,10 @@
 
 #include "utils.h"
 
-#define NUMBER "[[:digit:]]+" 
-#define FLOAT "(-)?" NUMBER "(." NUMBER ")?" "|" "." NUMBER
-#define OPEN_BRACKET "\\("
-#define CLOSE_BRACKET "\\)"
-
-const char* PATTERNS[] = {
-    "add",
-    "div",
-    "sin",
-    "cos",
-    "exp",
-    "mod",
-    "mult",
-    "geq",
-    "x",
-    "y",
-    "E",
-    ",",
-    "if",
-    "else",
-    OPEN_BRACKET,
-    CLOSE_BRACKET,
-    FLOAT,
-};
-
 char* tokens[INPUT_SIZE] = {0};
 
-size_t lex(char* input){
+size_t lex(char* input, const char* PATTERNS[], size_t num_of_patterns){
     size_t curr_token = 0;
-
-    size_t num_of_patterns = sizeof(PATTERNS) / sizeof(PATTERNS[0]);
 
     regex_t regex[num_of_patterns];
     regmatch_t match;

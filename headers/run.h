@@ -52,7 +52,7 @@ void run(){
 
             generate_ast(g.entry_point, depth);
         
-            print_ast_ln(ast.array_head);
+            print_ast_ln(ast.ast_root);
         }
 
         ast.size = ast.used; // set size of AST right after generating it

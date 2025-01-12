@@ -66,7 +66,7 @@ void grammar(){
 
     add_branch_to_rule("C", branch_single_rule("A", 0.1));
     add_branch_to_rule("C", branch_double_rule("C", "C", NK_ADD, 0.45));
-    add_branch_to_rule("C", branch_single_rule_node("C", NK_COS, 0.45));
+    add_branch_to_rule("C", branch_double_rule("C", "C", NK_MULT, 0.45));
 }
 ```
 

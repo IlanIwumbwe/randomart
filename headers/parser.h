@@ -7,6 +7,7 @@
 #include <math.h>
 
 int cursor;
+int maybe_errors = 0;
 int NUM_OF_TOKENS;
 
 void consume(){
@@ -14,7 +15,7 @@ void consume(){
         cursor++;
     } else {
         printf("Cannot consume any more tokens! Cursor at %d / %d\n", cursor, NUM_OF_TOKENS);
-        exit(-1);
+        maybe_errors += 1;
     }
 }
 
@@ -34,17 +35,20 @@ void expect_syntax(char* curr_token, char* expected){
         
     } else {
         printf("Expected %s but got %s \n", expected, curr_token);
-        exit(-1);
+        maybe_errors += 1;
     }
 }
 
-size_t parse_C();
+Option parse_C();
 
-size_t parse_binop(Node_kind nk){
+Option parse_binop(Node_kind nk){
     assert(nk & NK_BINOP);
+
+    maybe_errors = 0;
+
     consume(); // consume binop func name
 
-    size_t lhs = 0, rhs = 0;
+    Option lhs, rhs;
 
     expect_syntax(tokens[cursor], "(");
     lhs = parse_C();
@@ -52,54 +56,69 @@ size_t parse_binop(Node_kind nk){
     rhs = parse_C();
     expect_syntax(tokens[cursor], ")");
 
-    return node_binop(nk, lhs, rhs);
+    return wrap_value(node_binop(nk, lhs.value, rhs.value), maybe_errors || lhs.none || rhs.none);
 }
 
-size_t parse_unop(Node_kind nk){
+Option parse_unop(Node_kind nk){
     assert(nk & NK_UNOP);
+
+    maybe_errors = 0;
+
     consume(); // consume unop func name
 
-    size_t node = 0;
+    Option node;
 
     expect_syntax(tokens[cursor], "(");
     node = parse_C();
     expect_syntax(tokens[cursor], ")");
 
-    return node_unop(nk, node);
+    return wrap_value(node_unop(nk, node.value), maybe_errors || node.none);
 }
 
-size_t parse_A(){
+Option parse_A(){
+    maybe_errors = 0;
 
     if(token_matches(tokens[cursor], "x")){
         consume();
-        return node_x;
+
+        return wrap_value(node_x, maybe_errors);
+
     } else if (token_matches(tokens[cursor], "y")){
         consume();
-        return node_y;
+
+        return wrap_value(node_y, maybe_errors);
+
     } else {
         char* token = tokens[cursor];
         char* end;
         errno = 0;
         float num = strtof(token, &end);
 
+        size_t node = 0;
+
         if(end == token){
             printf("Token %s is not a valid float!\n", token);
-            exit(-1);
+            maybe_errors = 1;
+
         } else if (errno == ERANGE){
             printf("Token %s is out of range!\n", token);
-            exit(-1);
+            maybe_errors = 1;
+
         } else if((num > 1.0) || (num < -1.0)){
             printf("Number must be in [-1, 1]!\n");
-            exit(-1);
+            maybe_errors = 1;
+
         } else {
             consume();
-            return node_number(num);
+            node = node_number(num);
         }
+
+        return wrap_value(node, maybe_errors);
     }
 }
 
-size_t parse_C(){
-    
+Option parse_C(){
+
     if(token_matches(tokens[cursor], "add")){
         return parse_binop(NK_ADD);
         
@@ -130,54 +149,65 @@ size_t parse_C(){
 
 }
 
-size_t parse_E(){
+Option parse_E(){
+    maybe_errors = 0;
+
     expect_syntax(tokens[cursor], "E");
 
     expect_syntax(tokens[cursor], "(");
 
-    size_t first = parse_C();
+    Option first = parse_C();
     expect_syntax(tokens[cursor], ",");
-    size_t second = parse_C();
+    Option second = parse_C();
     expect_syntax(tokens[cursor], ",");
-    size_t third = parse_C();
+    Option third = parse_C();
 
     expect_syntax(tokens[cursor], ")");
 
-    return node_triple(NK_E, first, second, third);
+    return wrap_value(node_triple(NK_E, first.value, second.value, third.value), maybe_errors || first.none || second.none || third.none);
 }
 
-size_t parse_if(){
+Option parse_if(){
+    maybe_errors = 0;
+
     expect_syntax(tokens[cursor], "if");
 
     expect_syntax(tokens[cursor], "(");
     
-    size_t cond = parse_C();
+    Option cond = parse_C();
 
     expect_syntax(tokens[cursor], ")");
 
-    size_t true_body = parse_E();
+    Option true_body = parse_E();
 
     expect_syntax(tokens[cursor], "else");
 
-    size_t false_body = parse_E();
+    Option false_body = parse_E();
 
-    return node_triple(NK_IF_THEN_ELSE, cond, true_body, false_body);
+    return wrap_value(node_triple(NK_IF_THEN_ELSE, cond.value, true_body.value, false_body.value), maybe_errors || cond.none || true_body.none || false_body.none);
 }
 
 int parse(char* input){
-    NUM_OF_TOKENS = lex(input);
+    NUM_OF_TOKENS = lex(input, AST_PATTERNS, sizeof(AST_PATTERNS) / sizeof(AST_PATTERNS[0]));
     cursor = 0;
 
     if(NUM_OF_TOKENS){
+        Option ast_head;
+
         if(token_matches(tokens[cursor], "E")){
-            parse_E();
+            ast_head = parse_E();
 
         } else if (token_matches(tokens[cursor], "if")){
-            parse_if();
+            ast_head = parse_if();
+
+        } else {
+            return -1;
         }
 
         free_tokens(NUM_OF_TOKENS);
-        return 0;
+
+        return ast_head.none;
+
     } else {
         return -1;
     }

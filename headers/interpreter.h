@@ -178,7 +178,7 @@ size_t eval_ast(size_t index, float x, float y){
 size_t eval(float x, float y){
     find_ast_root();
     
-    return eval_ast(ast.array_head, x, y);
+    return eval_ast(ast.ast_root, x, y);
 }
 
 /// @brief Sample AST at random points

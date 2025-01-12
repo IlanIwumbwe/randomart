@@ -67,7 +67,7 @@ typedef struct{
     size_t used;
     size_t capacity;
 
-    size_t array_head;
+    size_t ast_root;
     size_t size; // size of AST after initial generation
 } Ast;
 
@@ -107,7 +107,7 @@ void reset_ast(){
 void find_ast_root(){
     assert(ast.size != 0);
 
-    ast.array_head = ast.size - 1; // reset head pointer to top of AST to setup re-evaluation
+    ast.ast_root = ast.size - 1; // reset head pointer to top of AST to setup re-evaluation
     ast.used = ast.size; // reset used counter to overwrite created nodes during previous evaluation
 }
 
@@ -140,7 +140,7 @@ size_t add_node_to_ast(Node node){
     
     assert(ast.used != 0);
 
-    ast.array_head = ast.used - 1;
+    ast.ast_root = ast.used - 1;
 
     return ast.used - 1;  // return pointer to node that just got added
 }
