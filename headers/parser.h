@@ -201,6 +201,7 @@ int parse(char* input){
             ast_head = parse_if();
 
         } else {
+            printf("AST root should be if or E! Here %s is used \n", tokens[cursor]);
             return -1;
         }
 

@@ -51,6 +51,8 @@ void run(){
             srand(seed);
 
             generate_ast(g.entry_point, depth);
+
+            printf("\n");
         
             print_ast_ln(ast.ast_root);
         }
